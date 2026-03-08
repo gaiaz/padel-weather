@@ -377,7 +377,7 @@ const App = () => {
         <AnimatePresence mode="wait">
           <motion.div key={`header-${selectedDay}`} className="flex items-start justify-between" {...contentSwap}>
             <div className="flex flex-col gap-1">
-              <h2 className="text-[42px] leading-[48px] tracking-[-2.1px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
+              <h2 className="text-[36px] leading-[42px] tracking-[-1.8px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
               <p className="font-ibm text-[18px] leading-[19.25px] text-[#364458]" style={{ fontWeight: 500 }}>{day.date}</p>
             </div>
             <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px] text-white" style={{ fontWeight: 500, background: BRAND }}>
@@ -449,7 +449,7 @@ const App = () => {
 
                         {/* Left: name + time */}
                         <div className="flex flex-col items-start min-w-[80px]">
-                          <span className="font-ibm text-[15px] text-[#364458]" style={{ fontWeight: isActive ? 700 : 500 }}>
+                          <span className="font-ibm text-[16px] text-[#364458]" style={{ fontWeight: isActive ? 700 : 500 }}>
                             {s.time}
                           </span>
                           <span className="font-ibm text-[10px] text-[#90a1b9] leading-[14px]" style={{ fontWeight: 600 }}>
