@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Lottie from 'lottie-react';
+import loaderAnimation from './loader.json';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sun, CloudRain, Wind, CheckCircle2,
@@ -293,13 +295,13 @@ const App = () => {
 
   /* ── Loading ── */
   if (loading) return (
-    <motion.div className="min-h-screen flex flex-col items-center justify-center" style={{ background: BRAND }}
+    <motion.div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: BRAND }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-        <Loader2 className="text-white mb-4" size={48} />
-      </motion.div>
-      <motion.p className="font-black text-white/60 uppercase tracking-widest text-[10px]"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+
+      <Lottie animationData={loaderAnimation} loop style={{ width: 90, height: 90 }} />
+
+      <motion.p className="font-black text-white/50 uppercase tracking-widest text-[10px]"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
         Caricamento radar...
       </motion.p>
     </motion.div>
