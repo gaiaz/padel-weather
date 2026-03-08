@@ -100,7 +100,7 @@ const App = () => {
   const slotDetails = [
     { range: '08:00 - 12:00' },
     { range: '13:00 - 18:00' },
-    { range: '19:00 - 23:00' },
+    { range: '18:00 - 23:00' },
   ];
 
   const mockFallback = Array.from({ length: 14 }).map((_, i) => {
@@ -179,7 +179,7 @@ const App = () => {
         const base   = di * 24;
         const morn   = [8,9,10,11].map(h => base + h);   // 08-11
         const aftern = [13,14,15,16,17].map(h => base + h); // 13-17
-        const eve    = [19,20,21,22].map(h => base + h);  // 19-22
+        const eve    = [18,19,20,21,22].map(h => base + h); // 18-22
 
         const slotData = (indices) => ({
           temp:      avg(hourly.temperature_2m, indices),
@@ -226,16 +226,23 @@ const App = () => {
     return Math.max(0, s);
   };
 
-  const scoreDotColor = (score) => {
-    if (score >= 8) return '#00d492';
-    if (score >= 5) return '#ffb900';
-    return '#ff6467';
+  const scoreDotColor = (item) => {
+    const isOut = courtType === 'outdoor';
+    const maxRain = Math.max(...(item.slots ?? []).map(s => s.rain ?? 0));
+    const maxTemp = Math.max(...(item.slots ?? []).map(s => s.temp ?? 0));
+    if (isOut && maxRain > 50) return '#ff6467';
+    if (isOut && maxRain > 20) return '#ffb900';
+    if (maxTemp > 32) return '#ffb900';
+    return '#00d492';
   };
 
-  const conditionIcon = (condition, size = 15) => {
-    const c = (condition || '').toLowerCase();
-    if (c.includes('rain') || c.includes('piogg')) return <CloudRain className="text-blue-300" size={size} />;
-    if (c.includes('wind') || c.includes('vent')) return <Wind className="text-teal-300" size={size} />;
+  const conditionIcon = (item, size = 15) => {
+    const rain = item.rainProb ?? 0;
+    const c = (item.condition || '').toLowerCase();
+    if (rain > 25 || c.includes('rain') || c.includes('piogg'))
+      return <CloudRain className="text-blue-300" size={size} />;
+    if (c.includes('wind') || c.includes('vent'))
+      return <Wind className="text-teal-300" size={size} />;
     return <Sun className="text-amber-300" size={size} />;
   };
 
@@ -358,8 +365,8 @@ const App = () => {
               variants={cardVariant} whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }}>
               <span className="text-[9px] uppercase tracking-[0.9px] font-ibm font-bold text-white/50">{item.day}</span>
               <span className="text-[20px] leading-[20px] font-ibm text-white" style={{ fontWeight: 600 }}>{item.date.split(' ')[0]}</span>
-              {conditionIcon(item.condition, 15)}
-              <motion.div className="w-[6px] h-[6px] rounded-full" style={{ background: scoreDotColor(item.score) }}
+              {conditionIcon(item, 15)}
+              <motion.div className="w-[6px] h-[6px] rounded-full" style={{ background: scoreDotColor(item) }}
                 initial={{ scale: 0 }} animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 + i * 0.04 }} />
             </motion.button>
