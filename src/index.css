@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+@import "@fontsource/space-grotesk/700.css";
+
+body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.font-ibm { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+.font-space { font-family: 'Space Grotesk', system-ui, sans-serif; }
