@@ -6,7 +6,8 @@
 @import "@fontsource/ibm-plex-sans/700.css";
 @import "@fontsource/space-grotesk/700.css";
 
-body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; background: #0041af; }
+#root { padding-top: env(safe-area-inset-top); }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
