@@ -101,6 +101,7 @@ const App = () => {
   const [isLive, setIsLive] = useState(false);
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   /* ── Google Calendar state ── */
   const [gcalConnected, setGcalConnected] = useState(false);
@@ -438,25 +439,29 @@ const App = () => {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
       {/* ── Header ── */}
-      <motion.header className="flex justify-between items-start px-6 pt-6 pb-2"
-        variants={fadeDown} initial="hidden" animate="show"
-        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}>
+      <motion.header
+        className="flex justify-between items-start px-6"
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0, paddingTop: isScrolled ? 10 : 24, paddingBottom: isScrolled ? 6 : 8 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
         <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
           <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white" style={{ fontWeight: 700 }}>
             Padel<span style={{ color: 'rgba(255,255,255,0.45)' }}>Weather</span>
           </h1>
-          <div className="flex items-center gap-2 mt-2">
+          <motion.div
+            className="flex items-center gap-2 mt-2 overflow-hidden"
+            animate={{ height: isScrolled ? 0 : 20, opacity: isScrolled ? 0 : 1, marginTop: isScrolled ? 0 : 8 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
             <span className="flex items-center gap-1 text-[11px] uppercase font-ibm font-bold text-white/70">
               <MapPin size={10} className="text-white/50" /> {location}
             </span>
             <span className="text-[9px] font-bold px-[9px] py-[3px] rounded-full border border-white/15 text-white/30">
               {isLive ? 'LIVE' : 'DEMO'}
             </span>
-          </div>
+          </motion.div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Google Calendar button — solo se Client ID configurato */}
           {gcalEnabled && (
             <motion.button
               onClick={gcalConnected ? disconnectGCal : connectGCal}
@@ -474,7 +479,6 @@ const App = () => {
               )}
             </motion.button>
           )}
-
           <motion.button onClick={() => fetchWeather()} className="p-[10px] rounded-[8px]"
             style={{ background: 'rgba(255,255,255,0.12)' }}
             whileTap={{ scale: 0.88, rotate: -30 }} whileHover={{ scale: 1.08 }}
@@ -484,66 +488,84 @@ const App = () => {
         </div>
       </motion.header>
 
-      {/* ── Toggle ── */}
-      <motion.div className="px-6 py-3" variants={fadeDown} initial="hidden" animate="show"
-        transition={{ duration: 0.4, delay: 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}>
-        <div className="flex p-1 rounded-[99px]" style={{ background: 'rgba(255,255,255,0.12)' }}>
-          {['outdoor', 'indoor'].map((type) => (
-            <motion.button key={type} onClick={() => setCourtType(type)}
-              className={`flex-1 py-[10px] text-[12px] rounded-[999px] uppercase font-ibm font-bold ${courtType === type ? 'bg-white' : 'text-white'}`}
-              style={courtType === type ? { color: BRAND } : {}}
-              whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-              {type === 'outdoor' ? "All'aperto" : 'Al chiuso'}
-            </motion.button>
-          ))}
+      {/* ── Toggle — nascosto quando scrolled ── */}
+      <motion.div
+        className="px-6 overflow-hidden"
+        animate={{ height: isScrolled ? 0 : 'auto', opacity: isScrolled ? 0 : 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+        <div className="py-3">
+          <div className="flex p-1 rounded-[99px]" style={{ background: 'rgba(255,255,255,0.12)' }}>
+            {['outdoor', 'indoor'].map((type) => (
+              <motion.button key={type} onClick={() => setCourtType(type)}
+                className={`flex-1 py-[10px] text-[12px] rounded-[999px] uppercase font-ibm font-bold ${courtType === type ? 'bg-white' : 'text-white'}`}
+                style={courtType === type ? { color: BRAND } : {}}
+                whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                {type === 'outdoor' ? "All'aperto" : 'Al chiuso'}
+              </motion.button>
+            ))}
+          </div>
         </div>
       </motion.div>
 
       {/* ── Day strip ── */}
       <div className="overflow-x-auto no-scrollbar w-full">
-      <motion.div className="flex gap-[10px] px-6 pt-2 pb-7 items-stretch w-max"
-        variants={staggerContainer} initial="hidden" animate="show">
-        {weatherData.map((item, i) => {
-          const isSelected = selectedDay === i;
-          const eventCount = gcalConnected ? (calEvents[item.iso]?.length || 0) : 0;
-          return (
-            <motion.button key={i}
-              onClick={() => { setSelectedDay(i); setSelectedSlot(1); }}
-              className="flex-shrink-0 flex flex-col items-center gap-[5.8px] w-[70px] p-[14px] rounded-[6px]"
-              style={isSelected ? { background: 'transparent', border: '2px solid #fff' } : { background: 'rgba(255,255,255,0.1)', border: '2px solid transparent' }}
-              variants={cardVariant} whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }}>
-              <span className="text-[9px] uppercase tracking-[0.9px] font-ibm font-bold text-white/50">{item.day}</span>
-              <span className="text-[20px] leading-[20px] font-ibm text-white" style={{ fontWeight: 600 }}>{item.date.split(' ')[0]}</span>
-              {conditionIcon(item, 15)}
-              <motion.div className="w-[6px] h-[6px] rounded-full" style={{ background: scoreDotColor(item) }}
-                initial={{ scale: 0 }} animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 + i * 0.04 }} />
-              {/* Calendar event dots — solo se connesso e ci sono impegni */}
-              <AnimatePresence>
-                {gcalConnected && eventCount > 0 && (
-                  <motion.div
-                    className="flex items-center gap-[3px]"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-                    {Array.from({ length: Math.min(eventCount, 3) }).map((_, j) => (
-                      <div key={j} className="w-[3px] h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.45)' }} />
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          );
-        })}
-      </motion.div>
+        <motion.div
+          className="flex gap-[8px] w-max"
+          animate={{ paddingLeft: 24, paddingRight: 24, paddingTop: isScrolled ? 4 : 8, paddingBottom: isScrolled ? 10 : 28 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+          {weatherData.map((item, i) => {
+            const isSelected = selectedDay === i;
+            const eventCount = gcalConnected ? (calEvents[item.iso]?.length || 0) : 0;
+            return (
+              <motion.button key={i}
+                onClick={() => { setSelectedDay(i); setSelectedSlot(1); setIsScrolled(false); }}
+                className="flex-shrink-0 flex flex-col items-center rounded-[6px]"
+                animate={{
+                  width: isScrolled ? 54 : 70,
+                  padding: isScrolled ? 8 : 14,
+                  gap: isScrolled ? 3 : 5.8,
+                }}
+                style={isSelected ? { background: 'transparent', border: '2px solid #fff' } : { background: 'rgba(255,255,255,0.1)', border: '2px solid transparent' }}
+                variants={cardVariant} whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+                <span className="text-[9px] uppercase tracking-[0.9px] font-ibm font-bold text-white/50">{item.day}</span>
+                <motion.span
+                  className="font-ibm text-white leading-none"
+                  animate={{ fontSize: isScrolled ? 16 : 20 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                  style={{ fontWeight: 600 }}>
+                  {item.date.split(' ')[0]}
+                </motion.span>
+                {!isScrolled && conditionIcon(item, 15)}
+                <motion.div className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: scoreDotColor(item) }}
+                  initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 + i * 0.04 }} />
+                <AnimatePresence>
+                  {!isScrolled && gcalConnected && eventCount > 0 && (
+                    <motion.div
+                      className="flex items-center gap-[3px]"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                      {Array.from({ length: Math.min(eventCount, 3) }).map((_, j) => (
+                        <div key={j} className="w-[3px] h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.45)' }} />
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            );
+          })}
+        </motion.div>
       </div>
 
       {/* ── White bottom sheet ── */}
       <motion.div className="flex-1 bg-white rounded-t-[36px] flex flex-col overflow-hidden"
         style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}
         variants={sheetVariant} initial="hidden" animate="show">
-      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-2 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-2 flex flex-col gap-3"
+        onScroll={e => setIsScrolled(e.currentTarget.scrollTop > 30)}>
 
         {/* Day + temp */}
         <AnimatePresence mode="wait">
@@ -552,7 +574,6 @@ const App = () => {
               <h2 className="text-[36px] leading-[42px] tracking-[-1.8px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
               <div className="flex items-center gap-3">
                 <p className="font-ibm text-[18px] leading-[19.25px] text-[#364458]" style={{ fontWeight: 500 }}>{day.date}</p>
-                {/* Impegni badge — subtle */}
                 <AnimatePresence>
                   {gcalConnected && selectedDayEventCount > 0 && (
                     <motion.div
@@ -706,7 +727,7 @@ const App = () => {
         </div>{/* end scrollable */}
 
         {/* CTA sticky bottom */}
-        <div className="px-6 pb-10 pt-3 bg-white flex gap-2" style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
+        <div className="px-6 pt-3 bg-white flex gap-2" style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)', paddingBottom: 'max(40px, calc(16px + env(safe-area-inset-bottom)))' }}>
           <motion.button
             onClick={() => window.open(buildGCalLink(), '_blank')}
             className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
