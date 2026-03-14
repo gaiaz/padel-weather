@@ -436,7 +436,7 @@ const App = () => {
   const selectedDayEventCount = selectedDayEvents.length;
 
   return (
-    <motion.div className="h-full flex flex-col" style={{ background: BRAND }}
+    <motion.div className="h-full flex flex-col" style={{ background: BRAND, paddingTop: 'env(safe-area-inset-top)' }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
       {/* ── Header ── */}

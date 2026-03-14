@@ -19,10 +19,8 @@ body {
   background: #0041af;
 }
 #root {
-  height: var(--app-height, 100%);
-  padding-top: env(safe-area-inset-top);
+  height: var(--app-height, 100vh);
   overflow: hidden;
-  box-sizing: border-box;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
