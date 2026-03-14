@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Lottie from 'lottie-react';
 import loaderAnimation from './loader.json';
 import { motion, AnimatePresence } from 'motion/react';
@@ -6,10 +6,11 @@ import {
   Sun, CloudRain, Wind, CheckCircle2,
   MapPin, Droplets, Loader2, RefreshCw,
   Thermometer, ChevronDown, ChevronUp, EyeOff, X,
-  Snowflake, AlertTriangle, ThumbsUp
+  Snowflake, AlertTriangle, ThumbsUp, CalendarDays, Share
 } from 'lucide-react';
 
 const BRAND = '#0041af';
+const GCAL_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const DAY_SHORT = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
 const DAY_FULL  = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
@@ -18,11 +19,13 @@ const MONTHS    = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set'
 const getDateInfo = (offset) => {
   const d = new Date();
   d.setDate(d.getDate() + offset);
+  const iso = d.toISOString().substring(0, 10);
   return {
     short:   offset === 0 ? 'Oggi' : DAY_SHORT[d.getDay()],
     full:    DAY_FULL[d.getDay()],
     dateStr: `${d.getDate()} ${MONTHS[d.getMonth()]}`,
     num:     d.getDate(),
+    iso,
   };
 };
 
@@ -99,6 +102,12 @@ const App = () => {
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
 
+  /* ── Google Calendar state ── */
+  const [gcalConnected, setGcalConnected] = useState(false);
+  const [gcalToken, setGcalToken] = useState(null);
+  const [calEvents, setCalEvents] = useState({}); // { 'YYYY-MM-DD': [{ title, startTime, endTime, allDay, slot }] }
+  const gcalClientRef = useRef(null);
+
   const slotDetails = [
     { range: '08:00 - 12:00' },
     { range: '13:00 - 18:00' },
@@ -114,6 +123,7 @@ const App = () => {
       day:      di.short,
       full:     di.full,
       date:     di.dateStr,
+      iso:      di.iso,
       tempMin:  hot ? 24 : 9,
       tempMax:  hot ? 34 : (rainy ? 11 : 17),
       condition: rainy ? 'rain' : (windy ? 'windy' : 'sunny'),
@@ -194,6 +204,7 @@ const App = () => {
           day:       info.short,
           full:      info.full,
           date:      info.dateStr,
+          iso:       info.iso,
           tempMax:   Math.round(daily.temperature_2m_max[di]),
           tempMin:   Math.round(daily.temperature_2m_min[di]),
           rainProb:  daily.precipitation_probability_max[di] ?? 0,
@@ -250,6 +261,96 @@ const App = () => {
 
   useEffect(() => { fetchWeather(); }, [courtType, location]);
 
+  /* ── Google Calendar: load GIS script ── */
+  useEffect(() => {
+    if (!GCAL_CLIENT_ID || GCAL_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') return;
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.onload = () => {
+      gcalClientRef.current = window.google.accounts.oauth2.initTokenClient({
+        client_id: GCAL_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/calendar.readonly',
+        callback: (response) => {
+          if (response.access_token) {
+            setGcalToken(response.access_token);
+            setGcalConnected(true);
+          }
+        },
+      });
+    };
+    document.head.appendChild(script);
+    return () => { if (document.head.contains(script)) document.head.removeChild(script); };
+  }, []);
+
+  /* ── Fetch calendar events when token changes ── */
+  useEffect(() => {
+    if (gcalToken) fetchCalendarEvents(gcalToken);
+  }, [gcalToken]);
+
+  const connectGCal = () => {
+    if (!gcalClientRef.current) return;
+    gcalClientRef.current.requestAccessToken();
+  };
+
+  const disconnectGCal = () => {
+    setGcalConnected(false);
+    setGcalToken(null);
+    setCalEvents({});
+  };
+
+  const timeToSlotName = (dateTimeStr) => {
+    if (!dateTimeStr) return null;
+    const h = new Date(dateTimeStr).getHours();
+    if (h >= 8  && h < 12) return 'Mattina';
+    if (h >= 13 && h < 18) return 'Pomeriggio';
+    if (h >= 18 && h < 23) return 'Sera';
+    return null;
+  };
+
+  const formatTime = (dateTimeStr) => {
+    if (!dateTimeStr) return '';
+    return new Date(dateTimeStr).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const fetchCalendarEvents = async (token) => {
+    try {
+      const now = new Date();
+      const end = new Date(now);
+      end.setDate(end.getDate() + 14);
+
+      const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!res.ok) {
+        setGcalConnected(false);
+        setGcalToken(null);
+        return;
+      }
+
+      const data = await res.json();
+      const grouped = {};
+      (data.items || []).forEach(event => {
+        const dateStr = (event.start.dateTime || event.start.date || '').substring(0, 10);
+        if (!dateStr) return;
+        if (!grouped[dateStr]) grouped[dateStr] = [];
+        const allDay = !event.start.dateTime;
+        grouped[dateStr].push({
+          title:     event.summary || 'Evento',
+          startTime: event.start.dateTime || null,
+          endTime:   event.end.dateTime || null,
+          allDay,
+          slot:      allDay ? null : timeToSlotName(event.start.dateTime),
+        });
+      });
+      setCalEvents(grouped);
+    } catch (e) {
+      console.error('Calendar fetch error', e);
+    }
+  };
+
   const day  = weatherData?.[selectedDay];
   const slot = day?.slots?.[selectedSlot];
 
@@ -258,31 +359,24 @@ const App = () => {
     const rain = slot.rain ?? day.rainProb ?? 0;
     const isOutdoor = courtType === 'outdoor';
 
-    // Pioggia — controlla sia il dato fascia che il giorno
     if (isOutdoor && (rain > 60 || (day.rainProb ?? 0) > 60))
       return { label: 'Rischio pioggia', tip: `${rain}% di pioggia. Campo scivoloso o impraticabile.`, color: '#dc2626', bg: '#fff1f2', border: '#fca5a5', iconBg: '#dc2626', iconBgBorder: 'rgba(252,165,165,0.4)', icon: <CloudRain size={18} color="#fff" /> };
 
-    // Vento
     if (isOutdoor && (day.wind ?? 0) > 25)
       return { label: 'Vento forte', tip: `Fino a ${day.wind} km/h. Evita pallonetti, gioca colpi bassi.`, color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4', iconBg: '#0d9488', iconBgBorder: 'rgba(153,246,228,0.4)', icon: <Wind size={18} color="#fff" /> };
 
-    // Caldo
     if (slot.temp > 30)
       return { label: courtType === 'indoor' ? 'Afa indoor' : 'Caldo intenso', tip: `${slot.temp}°C. Idratati spesso e riduci i punti lunghi.`, color: '#dc2626', bg: '#fff1f2', border: '#fca5a5', iconBg: '#dc2626', iconBgBorder: 'rgba(252,165,165,0.4)', icon: <Thermometer size={18} color="#fff" /> };
 
-    // Freddo
     if (slot.temp < 8)
       return { label: 'Troppo freddo', tip: `Solo ${slot.temp}°C. Riscaldamento lungo, rischio infortuni.`, color: '#6366f1', bg: '#eef2ff', border: '#c7d2fe', iconBg: '#6366f1', iconBgBorder: 'rgba(199,210,254,0.4)', icon: <Thermometer size={18} color="#fff" /> };
 
-    // Pioggia moderata sulla fascia
     if (isOutdoor && rain > 30)
       return { label: 'Possibile pioggia', tip: `${rain}% di probabilità pioggia in questa fascia. Tieni d'occhio il cielo.`, color: '#e87400', bg: '#fff7ed', border: '#feb84d', iconBg: '#e87400', iconBgBorder: 'rgba(254,154,0,0.4)', icon: <CloudRain size={18} color="#fff" /> };
 
-    // Sole in faccia pomeriggio
     if (isOutdoor && slot.condition?.toLowerCase().includes('sun') && selectedSlot === 1)
       return { label: 'Sole in faccia', tip: 'Sole basso tra le 16 e le 18. Porta gli occhiali!', color: '#e87400', bg: '#fff7ed', border: '#feb84d', iconBg: '#e87400', iconBgBorder: 'rgba(254,154,0,0.4)', icon: <EyeOff size={18} color="#fff" /> };
 
-    // Umidità vetri
     if ((slot.humidity ?? 0) > 85)
       return { label: 'Vetri bagnati', tip: 'Umidità altissima. La palla scivola sulle pareti.', color: '#dc2626', bg: '#fff1f2', border: '#fca5a5', iconBg: '#dc2626', iconBgBorder: 'rgba(252,165,165,0.4)', icon: <Droplets size={18} color="#fff" /> };
     if ((slot.humidity ?? 0) > 70)
@@ -292,6 +386,34 @@ const App = () => {
   };
 
   const info = fieldAnalysis();
+
+  const gcalEnabled = GCAL_CLIENT_ID && GCAL_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE';
+
+  const buildGCalLink = () => {
+    const slotTimes = [
+      { start: '09:00', end: '10:30' },
+      { start: '15:00', end: '16:30' },
+      { start: '20:00', end: '21:30' },
+    ];
+    const { start, end } = slotTimes[selectedSlot];
+    const dateBase = day.iso.replace(/-/g, '');
+    const startStr = `${dateBase}T${start.replace(':', '')}00`;
+    const endStr   = `${dateBase}T${end.replace(':', '')}00`;
+    const title    = encodeURIComponent(`🎾 Padel — ${location}`);
+    const details  = encodeURIComponent(`${info.label}: ${info.tip}`);
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startStr}/${endStr}&details=${details}`;
+  };
+
+  const handleShare = async () => {
+    const text = `🎾 Padel Weather (${location})\n📅 ${fullDayName} ${day.date}\n⏰ ${slot.time}\n${info.label}: ${info.tip}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Padel Weather', text }); } catch {}
+    } else {
+      navigator.clipboard.writeText(text);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    }
+  };
 
   /* ── Loading ── */
   if (loading) return (
@@ -308,6 +430,8 @@ const App = () => {
   );
 
   const fullDayName = day.full ?? day.day;
+  const selectedDayEvents = day?.iso ? (calEvents[day.iso] || []) : [];
+  const selectedDayEventCount = selectedDayEvents.length;
 
   return (
     <motion.div className="min-h-screen flex flex-col" style={{ background: BRAND }}
@@ -330,12 +454,34 @@ const App = () => {
             </span>
           </div>
         </div>
-        <motion.button onClick={() => fetchWeather()} className="p-[10px] rounded-[8px]"
-          style={{ background: 'rgba(255,255,255,0.12)' }}
-          whileTap={{ scale: 0.88, rotate: -30 }} whileHover={{ scale: 1.08 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
-          <RefreshCw size={17} className="text-white" />
-        </motion.button>
+
+        <div className="flex items-center gap-2">
+          {/* Google Calendar button — solo se Client ID configurato */}
+          {gcalEnabled && (
+            <motion.button
+              onClick={gcalConnected ? disconnectGCal : connectGCal}
+              className="p-[10px] rounded-[8px] relative"
+              style={{ background: 'rgba(255,255,255,0.12)' }}
+              whileTap={{ scale: 0.88 }} whileHover={{ scale: 1.08 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+              title={gcalConnected ? 'Calendario connesso — tap per disconnettere' : 'Connetti Google Calendar'}>
+              <CalendarDays size={17} className="text-white" style={{ opacity: gcalConnected ? 1 : 0.4 }} />
+              {gcalConnected && (
+                <motion.div
+                  className="absolute top-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-green-400"
+                  initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }} />
+              )}
+            </motion.button>
+          )}
+
+          <motion.button onClick={() => fetchWeather()} className="p-[10px] rounded-[8px]"
+            style={{ background: 'rgba(255,255,255,0.12)' }}
+            whileTap={{ scale: 0.88, rotate: -30 }} whileHover={{ scale: 1.08 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
+            <RefreshCw size={17} className="text-white" />
+          </motion.button>
+        </div>
       </motion.header>
 
       {/* ── Toggle ── */}
@@ -359,6 +505,7 @@ const App = () => {
         variants={staggerContainer} initial="hidden" animate="show">
         {weatherData.map((item, i) => {
           const isSelected = selectedDay === i;
+          const eventCount = gcalConnected ? (calEvents[item.iso]?.length || 0) : 0;
           return (
             <motion.button key={i}
               onClick={() => { setSelectedDay(i); setSelectedSlot(1); }}
@@ -371,6 +518,21 @@ const App = () => {
               <motion.div className="w-[6px] h-[6px] rounded-full" style={{ background: scoreDotColor(item) }}
                 initial={{ scale: 0 }} animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 + i * 0.04 }} />
+              {/* Calendar event dots — solo se connesso e ci sono impegni */}
+              <AnimatePresence>
+                {gcalConnected && eventCount > 0 && (
+                  <motion.div
+                    className="flex items-center gap-[3px]"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                    {Array.from({ length: Math.min(eventCount, 3) }).map((_, j) => (
+                      <div key={j} className="w-[3px] h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.45)' }} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.button>
           );
         })}
@@ -387,7 +549,25 @@ const App = () => {
           <motion.div key={`header-${selectedDay}`} className="flex items-start justify-between" {...contentSwap}>
             <div className="flex flex-col gap-1">
               <h2 className="text-[36px] leading-[42px] tracking-[-1.8px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
-              <p className="font-ibm text-[18px] leading-[19.25px] text-[#364458]" style={{ fontWeight: 500 }}>{day.date}</p>
+              <div className="flex items-center gap-3">
+                <p className="font-ibm text-[18px] leading-[19.25px] text-[#364458]" style={{ fontWeight: 500 }}>{day.date}</p>
+                {/* Impegni badge — subtle */}
+                <AnimatePresence>
+                  {gcalConnected && selectedDayEventCount > 0 && (
+                    <motion.div
+                      className="flex items-center gap-[5px]"
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -6 }}
+                      transition={{ duration: 0.2 }}>
+                      <CalendarDays size={11} style={{ color: '#90a1b9' }} />
+                      <span className="font-ibm text-[11px] text-[#90a1b9]" style={{ fontWeight: 600 }}>
+                        {selectedDayEventCount} {selectedDayEventCount === 1 ? 'impegno' : 'impegni'}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
             <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px] text-white" style={{ fontWeight: 500, background: BRAND }}>
               {day.tempMax}°
@@ -426,6 +606,51 @@ const App = () => {
             </div>
             <p className="font-ibm text-[14px] leading-[19.25px] text-[#583131]" style={{ fontWeight: 500 }}>{info.tip}</p>
           </motion.div>
+        </AnimatePresence>
+
+        {/* Calendar events for selected day */}
+        <AnimatePresence>
+          {gcalConnected && selectedDayEventCount > 0 && (
+            <motion.div
+              key={`events-${selectedDay}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.22 }}
+              className="flex flex-col gap-[6px]">
+              <span className="font-ibm text-[11px] uppercase tracking-[0.8px] text-[#90a1b9]" style={{ fontWeight: 700 }}>
+                Agenda
+              </span>
+              {selectedDayEvents.map((ev, i) => (
+                <motion.div key={i}
+                  className="flex items-center gap-3 px-3 py-[10px] rounded-[8px]"
+                  style={{ background: '#f8fafc' }}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}>
+                  {/* Fascia pill */}
+                  <div className="flex-shrink-0 w-[3px] self-stretch rounded-full"
+                    style={{ background: ev.slot === 'Mattina' ? '#fbbf24' : ev.slot === 'Pomeriggio' ? BRAND : ev.slot === 'Sera' ? '#6366f1' : '#cbd5e1' }} />
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-ibm text-[13px] text-[#222f44] truncate" style={{ fontWeight: 600 }}>{ev.title}</span>
+                    <span className="font-ibm text-[10px] text-[#90a1b9]" style={{ fontWeight: 500 }}>
+                      {ev.allDay ? 'Tutto il giorno' : `${formatTime(ev.startTime)} – ${formatTime(ev.endTime)}`}
+                    </span>
+                  </div>
+                  {ev.slot && (
+                    <span className="font-ibm text-[9px] uppercase px-[7px] py-[3px] rounded-full flex-shrink-0"
+                      style={{
+                        fontWeight: 700,
+                        color: ev.slot === 'Mattina' ? '#92400e' : ev.slot === 'Pomeriggio' ? BRAND : '#4338ca',
+                        background: ev.slot === 'Mattina' ? '#fef3c7' : ev.slot === 'Pomeriggio' ? '#eff6ff' : '#eef2ff',
+                      }}>
+                      {ev.slot}
+                    </span>
+                  )}
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Accordion slot detail */}
@@ -500,28 +725,34 @@ const App = () => {
           </AnimatePresence>
         </div>
 
-        {/* Share CTA */}
-        <motion.button
-          onClick={() => {
-            const text = `🎾 Padel Weather (${location})\n📅 ${fullDayName} ${day.date}\n⏰ ${slot.time}\n${info.label}: ${info.tip}`;
-            navigator.clipboard.writeText(text);
-            setCopyFeedback(true);
-            setTimeout(() => setCopyFeedback(false), 2000);
-          }}
-          className="w-full py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
-          style={{ fontWeight: 500, background: copyFeedback ? '#16a34a' : BRAND }}
-          whileHover={{ scale: 1.015, boxShadow: `0 8px 28px ${BRAND}55` }}
-          whileTap={{ scale: 0.97 }}
-          transition={{ type: 'spring', stiffness: 380, damping: 20 }}
-          layout>
-          <AnimatePresence mode="wait">
-            <motion.span key={copyFeedback ? 'copied' : 'share'}
-              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18 }}>
-              {copyFeedback ? 'Copiato!' : 'Condividi meteo'}
-            </motion.span>
-          </AnimatePresence>
-        </motion.button>
+        {/* CTA row */}
+        <div className="flex gap-2">
+          <motion.button
+            onClick={() => window.open(buildGCalLink(), '_blank')}
+            className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
+            style={{ fontWeight: 500, background: BRAND }}
+            whileHover={{ scale: 1.015, boxShadow: `0 8px 28px ${BRAND}55` }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 20 }}>
+            Aggiungi partita
+          </motion.button>
+          <motion.button
+            onClick={handleShare}
+            className="px-5 py-[17px] rounded-[8px] flex items-center justify-center"
+            style={{ background: '#f1f5f9' }}
+            whileTap={{ scale: 0.93 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 20 }}>
+            <AnimatePresence mode="wait">
+              <motion.span key={copyFeedback ? 'ok' : 'share'}
+                initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }}
+                transition={{ duration: 0.15 }}>
+                {copyFeedback
+                  ? <CheckCircle2 size={20} style={{ color: '#16a34a' }} />
+                  : <Share size={20} style={{ color: '#364458' }} />}
+              </motion.span>
+            </AnimatePresence>
+          </motion.button>
+        </div>
 
       </motion.div>
 
