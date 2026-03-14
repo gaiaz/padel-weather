@@ -45,6 +45,8 @@ body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smooth
     min-height: -webkit-fill-available;
     height: 100lvh !important;
     min-height: 100lvh !important;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: border-box;
   }
 }
 

@@ -792,9 +792,9 @@ const App = () => {
 
       </div>{/* end white scroll area */}
 
-      {/* ── CTA — flex child, sempre visibile in fondo ── */}
-      <div className="bg-white flex-shrink-0 px-6 pt-3 flex gap-2"
-        style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+      {/* ── CTA — flex child, sempre visibile in fondo (il container .app-fullheight ha già padding-bottom safe area) ── */}
+      <div className="bg-white flex-shrink-0 px-6 pt-3 pb-8 flex gap-2"
+        style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
         <motion.button
           onClick={() => window.open(buildGCalLink(), '_blank')}
           className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
