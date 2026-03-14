@@ -102,6 +102,7 @@ const App = () => {
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const compactLockedRef = useRef(false);
 
   /* ── Google Calendar state ── */
   const [gcalConnected, setGcalConnected] = useState(false);
@@ -518,25 +519,46 @@ const App = () => {
             const eventCount = gcalConnected ? (calEvents[item.iso]?.length || 0) : 0;
             return (
               <motion.button key={i}
-                onClick={() => { setSelectedDay(i); setSelectedSlot(1); setIsScrolled(false); }}
-                className="flex-shrink-0 flex flex-col items-center rounded-[6px]"
+                onClick={() => { setSelectedDay(i); setSelectedSlot(1); setIsScrolled(false); compactLockedRef.current = false; }}
+                className="flex-shrink-0 flex flex-col items-center gap-[5.8px] rounded-[6px]"
+                initial={{ opacity: 0, y: 20, scale: 0.92 }}
                 animate={{
-                  width: isScrolled ? 54 : 70,
-                  padding: isScrolled ? 8 : 14,
-                  gap: isScrolled ? 3 : 5.8,
+                  opacity: 1, y: 0, scale: 1,
+                  width: isScrolled ? 52 : 70,
+                  paddingTop:    isScrolled ? 8  : 14,
+                  paddingBottom: isScrolled ? 8  : 14,
+                  paddingLeft:   isScrolled ? 6  : 14,
+                  paddingRight:  isScrolled ? 6  : 14,
                 }}
                 style={isSelected ? { background: 'transparent', border: '2px solid #fff' } : { background: 'rgba(255,255,255,0.1)', border: '2px solid transparent' }}
-                variants={cardVariant} whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+                whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }}
+                transition={{
+                  opacity:       { duration: 0.3, delay: 0.15 + i * 0.055 },
+                  y:             { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
+                  scale:         { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
+                  width:         { type: 'spring', stiffness: 300, damping: 28 },
+                  paddingTop:    { type: 'spring', stiffness: 300, damping: 28 },
+                  paddingBottom: { type: 'spring', stiffness: 300, damping: 28 },
+                  paddingLeft:   { type: 'spring', stiffness: 300, damping: 28 },
+                  paddingRight:  { type: 'spring', stiffness: 300, damping: 28 },
+                }}>
                 <span className="text-[9px] uppercase tracking-[0.9px] font-ibm font-bold text-white/50">{item.day}</span>
                 <motion.span
                   className="font-ibm text-white leading-none"
-                  animate={{ fontSize: isScrolled ? 16 : 20 }}
+                  animate={{ fontSize: isScrolled ? 15 : 20 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                   style={{ fontWeight: 600 }}>
                   {item.date.split(' ')[0]}
                 </motion.span>
-                {!isScrolled && conditionIcon(item, 15)}
+                <AnimatePresence>
+                  {!isScrolled && (
+                    <motion.div key="icon"
+                      initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+                      transition={{ duration: 0.15 }}>
+                      {conditionIcon(item, 15)}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <motion.div className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: scoreDotColor(item) }}
                   initial={{ scale: 0 }} animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 + i * 0.04 }} />
@@ -544,9 +566,7 @@ const App = () => {
                   {!isScrolled && gcalConnected && eventCount > 0 && (
                     <motion.div
                       className="flex items-center gap-[3px]"
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.5 }}
+                      initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
                       {Array.from({ length: Math.min(eventCount, 3) }).map((_, j) => (
                         <div key={j} className="w-[3px] h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.45)' }} />
@@ -565,7 +585,21 @@ const App = () => {
         style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}
         variants={sheetVariant} initial="hidden" animate="show">
       <div className="flex-1 overflow-y-auto px-6 pt-6 pb-2 flex flex-col gap-3"
-        onScroll={e => setIsScrolled(e.currentTarget.scrollTop > 30)}>
+        style={{ overscrollBehavior: 'contain' }}
+        onScroll={e => {
+          const top = e.currentTarget.scrollTop;
+          if (top > 30) {
+            if (!compactLockedRef.current) {
+              // Attiva compact + lock per 500ms (evita bounce iOS)
+              setIsScrolled(true);
+              compactLockedRef.current = true;
+              setTimeout(() => { compactLockedRef.current = false; }, 500);
+            }
+          } else if (top === 0 && !compactLockedRef.current) {
+            // De-compatta solo se scrollTop è tornato a 0 E il lock è scaduto
+            setIsScrolled(false);
+          }
+        }}>
 
         {/* Day + temp */}
         <AnimatePresence mode="wait">
@@ -727,7 +761,8 @@ const App = () => {
         </div>{/* end scrollable */}
 
         {/* CTA sticky bottom */}
-        <div className="px-6 pt-3 bg-white flex gap-2" style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)', paddingBottom: 'max(40px, calc(16px + env(safe-area-inset-bottom)))' }}>
+        <div className="bg-white" style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
+        <div className="px-6 pt-3 pb-6 flex gap-2">
           <motion.button
             onClick={() => window.open(buildGCalLink(), '_blank')}
             className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
@@ -753,6 +788,9 @@ const App = () => {
               </motion.span>
             </AnimatePresence>
           </motion.button>
+        </div>
+        {/* safe area spacer — home bar iPhone */}
+        <div style={{ height: 'env(safe-area-inset-bottom)', background: 'white' }} />
         </div>
 
       </motion.div>
