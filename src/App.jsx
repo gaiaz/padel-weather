@@ -103,12 +103,6 @@ const App = () => {
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const compactLockedRef = useRef(false);
-  const [appHeight, setAppHeight] = useState(() => window.innerHeight);
-  useEffect(() => {
-    const update = () => setAppHeight(window.innerHeight);
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
 
   /* ── Google Calendar state ── */
   const [gcalConnected, setGcalConnected] = useState(false);
@@ -442,7 +436,7 @@ const App = () => {
   const selectedDayEventCount = selectedDayEvents.length;
 
   return (
-    <motion.div className="flex flex-col" style={{ height: appHeight, background: BRAND, paddingTop: 'env(safe-area-inset-top)' }}
+    <motion.div className="h-screen flex flex-col" style={{ background: BRAND }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
       {/* ── Header ── */}
