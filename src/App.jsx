@@ -441,9 +441,12 @@ const App = () => {
       style={{
         background: BRAND,
         position: 'fixed',
-        inset: 0,
-        minHeight: 'var(--app-height, 100vh)',
-        height: '100%',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 'auto',
+        height: 'var(--app-height)',
+        minHeight: 'var(--app-height)',
       }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 

@@ -6,7 +6,7 @@
 @import "@fontsource/ibm-plex-sans/700.css";
 @import "@fontsource/space-grotesk/700.css";
 
-/* Altezza reale su iOS PWA: --app-height da JS; in standalone usiamo 100lvh (large viewport = schermo intero) */
+/* Altezza: solo --app-height (impostata da JS in HTML + main.jsx). Niente 100vh/100lvh per evitare bug iOS. */
 :root {
   --app-height: 100vh;
 }
@@ -14,21 +14,10 @@
 html, body {
   overscroll-behavior: none;
   overflow: hidden;
-  height: 100%;
-  min-height: 100vh;
-  min-height: var(--app-height);
   position: fixed;
   width: 100%;
-  /* In standalone (Aggiungi a Home) il viewport “large” copre tutto lo schermo */
-  height: 100vh;
-  height: 100dvh;
-}
-@media (display-mode: standalone) {
-  html, body {
-    height: 100vh;
-    height: 100lvh;
-    min-height: 100lvh;
-  }
+  height: var(--app-height);
+  min-height: var(--app-height);
 }
 body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; background: #0041af; }
 #root {
@@ -36,18 +25,12 @@ body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smooth
   min-height: var(--app-height);
   overflow: hidden;
 }
-@media (display-mode: standalone) {
-  #root {
-    min-height: 100lvh;
-  }
-  /* Forza il container principale a occupare il viewport “large” (schermo intero) su iOS PWA */
-  .app-fullheight {
-    min-height: -webkit-fill-available;
-    height: 100lvh !important;
-    min-height: 100lvh !important;
-    padding-bottom: env(safe-area-inset-bottom);
-    box-sizing: border-box;
-  }
+
+.app-fullheight {
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+  height: var(--app-height) !important;
+  min-height: var(--app-height) !important;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }

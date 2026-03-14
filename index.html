@@ -2,6 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        var setH = function() {
+          var v = window.visualViewport;
+          var h = (v && v.height) ? Math.max(window.innerHeight, v.height) : window.innerHeight;
+          document.documentElement.style.setProperty('--app-height', (h || 100) + 'px');
+        };
+        setH();
+        window.addEventListener('resize', setH);
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', setH);
+      })();
+    </script>
     <link rel="icon" type="image/png" href="/icon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />

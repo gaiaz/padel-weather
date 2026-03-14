@@ -23,9 +23,7 @@ window.addEventListener('pageshow', (e) => e.persisted && setAppHeight());
 setAppHeight();
 // Secondo pass dopo il layout (utile su iOS standalone al primo caricamento)
 requestAnimationFrame(setAppHeight);
-setTimeout(setAppHeight, 100);
-setTimeout(setAppHeight, 400);
-setTimeout(setAppHeight, 1000);
+[100, 300, 500, 800, 1200, 2000].forEach((ms) => setTimeout(setAppHeight, ms));
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
