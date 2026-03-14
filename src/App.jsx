@@ -69,24 +69,24 @@ const getSlotVerdict = (s, dayData, ct) => {
   const wind = dayData?.wind ?? 0;
 
   if (rain > 60)
-    return { label: 'Pioggia', color: '#dc2626', bg: '#fef2f2', icon: <CloudRain size={10} /> };
+    return { label: 'Pioggia', color: '#dc2626', bg: '#fef2f2', icon: <CloudRain size={13} /> };
   if (temp > 33)
-    return { label: 'Troppo caldo', color: '#dc2626', bg: '#fef2f2', icon: <Thermometer size={10} /> };
+    return { label: 'Troppo caldo', color: '#dc2626', bg: '#fef2f2', icon: <Thermometer size={13} /> };
   if (wind > 35 && ct === 'outdoor')
-    return { label: 'Vento forte', color: '#0d9488', bg: '#f0fdfa', icon: <Wind size={10} /> };
+    return { label: 'Vento forte', color: '#0d9488', bg: '#f0fdfa', icon: <Wind size={13} /> };
   if (temp < 8)
-    return { label: 'Troppo freddo', color: '#6366f1', bg: '#eef2ff', icon: <Snowflake size={10} /> };
+    return { label: 'Troppo freddo', color: '#6366f1', bg: '#eef2ff', icon: <Snowflake size={13} /> };
   if (rain > 30)
-    return { label: 'Potrebbe piovere', color: '#e87400', bg: '#fff7ed', icon: <CloudRain size={10} /> };
+    return { label: 'Potrebbe piovere', color: '#e87400', bg: '#fff7ed', icon: <CloudRain size={13} /> };
   if (hum > 85)
-    return { label: 'Umidità alta', color: '#e87400', bg: '#fff7ed', icon: <Droplets size={10} /> };
+    return { label: 'Umidità alta', color: '#e87400', bg: '#fff7ed', icon: <Droplets size={13} /> };
   if (temp < 12)
-    return { label: 'Freddo', color: '#6366f1', bg: '#eef2ff', icon: <Snowflake size={10} /> };
+    return { label: 'Freddo', color: '#6366f1', bg: '#eef2ff', icon: <Snowflake size={13} /> };
   if (temp > 28)
-    return { label: 'Abbastanza caldo', color: '#e87400', bg: '#fff7ed', icon: <Thermometer size={10} /> };
+    return { label: 'Abbastanza caldo', color: '#e87400', bg: '#fff7ed', icon: <Thermometer size={13} /> };
   if (temp >= 16 && temp <= 26 && rain < 15 && hum < 75)
-    return { label: 'Ottimo', color: '#16a34a', bg: '#f0fdf4', icon: <ThumbsUp size={10} /> };
-  return { label: 'OK', color: BRAND, bg: '#eff6ff', icon: <CheckCircle2 size={10} /> };
+    return { label: 'Ottimo', color: '#16a34a', bg: '#f0fdf4', icon: <ThumbsUp size={13} /> };
+  return { label: 'OK', color: BRAND, bg: '#eff6ff', icon: <CheckCircle2 size={13} /> };
 };
 
 const App = () => {
@@ -434,7 +434,7 @@ const App = () => {
   const selectedDayEventCount = selectedDayEvents.length;
 
   return (
-    <motion.div className="min-h-screen flex flex-col" style={{ background: BRAND }}
+    <motion.div className="h-screen flex flex-col" style={{ background: BRAND }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
       {/* ── Header ── */}
@@ -540,9 +540,10 @@ const App = () => {
       </div>
 
       {/* ── White bottom sheet ── */}
-      <motion.div className="flex-1 bg-white rounded-t-[36px] px-6 pt-6 pb-10 flex flex-col gap-3"
+      <motion.div className="flex-1 bg-white rounded-t-[36px] flex flex-col overflow-hidden"
         style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}
         variants={sheetVariant} initial="hidden" animate="show">
+      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-2 flex flex-col gap-3">
 
         {/* Day + temp */}
         <AnimatePresence mode="wait">
@@ -608,51 +609,6 @@ const App = () => {
           </motion.div>
         </AnimatePresence>
 
-        {/* Calendar events for selected day */}
-        <AnimatePresence>
-          {gcalConnected && selectedDayEventCount > 0 && (
-            <motion.div
-              key={`events-${selectedDay}`}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.22 }}
-              className="flex flex-col gap-[6px]">
-              <span className="font-ibm text-[11px] uppercase tracking-[0.8px] text-[#90a1b9]" style={{ fontWeight: 700 }}>
-                Agenda
-              </span>
-              {selectedDayEvents.map((ev, i) => (
-                <motion.div key={i}
-                  className="flex items-center gap-3 px-3 py-[10px] rounded-[8px]"
-                  style={{ background: '#f8fafc' }}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}>
-                  {/* Fascia pill */}
-                  <div className="flex-shrink-0 w-[3px] self-stretch rounded-full"
-                    style={{ background: ev.slot === 'Mattina' ? '#fbbf24' : ev.slot === 'Pomeriggio' ? BRAND : ev.slot === 'Sera' ? '#6366f1' : '#cbd5e1' }} />
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-ibm text-[13px] text-[#222f44] truncate" style={{ fontWeight: 600 }}>{ev.title}</span>
-                    <span className="font-ibm text-[10px] text-[#90a1b9]" style={{ fontWeight: 500 }}>
-                      {ev.allDay ? 'Tutto il giorno' : `${formatTime(ev.startTime)} – ${formatTime(ev.endTime)}`}
-                    </span>
-                  </div>
-                  {ev.slot && (
-                    <span className="font-ibm text-[9px] uppercase px-[7px] py-[3px] rounded-full flex-shrink-0"
-                      style={{
-                        fontWeight: 700,
-                        color: ev.slot === 'Mattina' ? '#92400e' : ev.slot === 'Pomeriggio' ? BRAND : '#4338ca',
-                        background: ev.slot === 'Mattina' ? '#fef3c7' : ev.slot === 'Pomeriggio' ? '#eff6ff' : '#eef2ff',
-                      }}>
-                      {ev.slot}
-                    </span>
-                  )}
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Accordion slot detail */}
         <div className="border-t border-slate-100 pt-[13px]">
           <motion.button onClick={() => setIsAccordionOpen(o => !o)}
@@ -673,48 +629,70 @@ const App = () => {
                   {day.slots.map((s, i) => {
                     const isActive = selectedSlot === i;
                     const verdict = getSlotVerdict(s, day, courtType);
+                    const slotEvents = gcalConnected ? (selectedDayEvents.filter(ev => ev.slot === s.time)) : [];
                     return (
                       <motion.button key={i} onClick={() => setSelectedSlot(i)}
-                        className="w-full flex items-center justify-between"
+                        className="w-full flex flex-col text-left"
                         variants={slotVariant} whileTap={{ scale: 0.98 }}
                         style={isActive
                           ? { background: 'rgba(37,37,255,0.03)', border: `1px solid ${BRAND}`, borderRadius: '8px', padding: '14px 16px', opacity: 1 }
                           : { background: '#f8fafc', border: '2px solid transparent', borderRadius: '8px', padding: '14px 16px', opacity: 0.65 }}>
 
-                        {/* Left: name + time */}
-                        <div className="flex flex-col items-start min-w-[80px]">
-                          <span className="font-ibm text-[16px] text-[#364458]" style={{ fontWeight: isActive ? 700 : 500 }}>
-                            {s.time}
-                          </span>
-                          <span className="font-ibm text-[10px] text-[#90a1b9] leading-[14px]" style={{ fontWeight: 600 }}>
-                            {slotDetails[i].range}
-                          </span>
-                        </div>
+                        {/* Main row */}
+                        <div className="flex items-center justify-between w-full">
+                          {/* Left: name + time */}
+                          <div className="flex flex-col items-start min-w-[80px]">
+                            <span className="font-ibm text-[16px] text-[#364458]" style={{ fontWeight: isActive ? 700 : 500 }}>
+                              {s.time}
+                            </span>
+                            <span className="font-ibm text-[10px] text-[#90a1b9] leading-[14px]" style={{ fontWeight: 600 }}>
+                              {slotDetails[i].range}
+                            </span>
+                          </div>
 
-                        {/* Center: verdict badge */}
-                        <motion.div
-                          className="flex items-center gap-1 px-[8px] py-[4px] rounded-[6px]"
-                          style={{ background: verdict.bg }}
-                          initial={{ scale: 0.85, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.05 }}>
-                          <span style={{ color: verdict.color }}>{verdict.icon}</span>
-                          <span className="font-ibm text-[11px] leading-none" style={{ fontWeight: 700, color: verdict.color }}>
-                            {verdict.label}
-                          </span>
-                        </motion.div>
+                          {/* Center: verdict badge */}
+                          <motion.div
+                            className="flex items-center gap-1 px-[8px] py-[4px] rounded-[6px]"
+                            style={{ background: verdict.bg }}
+                            initial={{ scale: 0.85, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.05 }}>
+                            <span style={{ color: verdict.color }}>{verdict.icon}</span>
+                            <span className="font-ibm text-[11px] leading-none" style={{ fontWeight: 700, color: verdict.color }}>
+                              {verdict.label}
+                            </span>
+                          </motion.div>
 
-                        {/* Right: temp + rain */}
-                        <div className="flex flex-col items-end min-w-[36px]">
-                          <span className="font-ibm text-[14px] leading-[18px]"
-                                style={{ fontWeight: 700, color: s.temp > 30 ? '#fb2c36' : '#1d293d' }}>
-                            {s.temp}°
-                          </span>
-                          <div className="flex items-center gap-0.5">
-                            <CloudRain size={9} style={{ color: s.rain > 30 ? '#3b82f6' : '#cbd5e1' }} />
-                            <span className="font-ibm text-[10px] text-[#90a1b9]" style={{ fontWeight: 600 }}>{s.rain}%</span>
+                          {/* Right: temp + condition icon */}
+                          <div className="flex flex-col items-end min-w-[36px] gap-[2px]">
+                            <span className="font-ibm text-[14px] leading-[18px]"
+                                  style={{ fontWeight: 700, color: s.temp > 30 ? '#fb2c36' : '#1d293d' }}>
+                              {s.temp}°
+                            </span>
+                            <div className="flex items-center gap-[3px]">
+                              {conditionIcon({ rainProb: s.rain, condition: s.condition }, 14)}
+                              <span className="font-ibm text-[11px] text-[#90a1b9]" style={{ fontWeight: 600 }}>{s.rain}%</span>
+                            </div>
                           </div>
                         </div>
+
+                        {/* Integrated agenda events */}
+                        {slotEvents.length > 0 && (
+                          <div className="mt-[10px] flex flex-col gap-[5px] w-full">
+                            {slotEvents.map((ev, j) => (
+                              <div key={j} className="flex items-center gap-2">
+                                <div className="flex-shrink-0 w-[3px] self-stretch rounded-full"
+                                  style={{ background: i === 0 ? '#fbbf24' : i === 1 ? BRAND : '#6366f1' }} />
+                                <div className="flex flex-col flex-1 min-w-0">
+                                  <span className="font-ibm text-[12px] text-[#364458] truncate" style={{ fontWeight: 600 }}>{ev.title}</span>
+                                  <span className="font-ibm text-[10px] text-[#90a1b9]" style={{ fontWeight: 500 }}>
+                                    {ev.allDay ? 'Tutto il giorno' : `${formatTime(ev.startTime)} – ${formatTime(ev.endTime)}`}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                       </motion.button>
                     );
@@ -725,8 +703,10 @@ const App = () => {
           </AnimatePresence>
         </div>
 
-        {/* CTA row */}
-        <div className="flex gap-2">
+        </div>{/* end scrollable */}
+
+        {/* CTA sticky bottom */}
+        <div className="px-6 pb-10 pt-3 bg-white flex gap-2" style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
           <motion.button
             onClick={() => window.open(buildGCalLink(), '_blank')}
             className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
