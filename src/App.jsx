@@ -761,8 +761,8 @@ const App = () => {
         </div>{/* end scrollable */}
 
         {/* CTA sticky bottom */}
-        <div className="bg-white" style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
-        <div className="px-6 pt-3 pb-6 flex gap-2">
+        <div className="bg-white px-6 pt-3 flex gap-2"
+          style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
           <motion.button
             onClick={() => window.open(buildGCalLink(), '_blank')}
             className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
@@ -788,9 +788,6 @@ const App = () => {
               </motion.span>
             </AnimatePresence>
           </motion.button>
-        </div>
-        {/* safe area spacer — home bar iPhone */}
-        <div style={{ height: 'env(safe-area-inset-bottom)', background: 'white' }} />
         </div>
 
       </motion.div>
