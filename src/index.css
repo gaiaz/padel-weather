@@ -14,7 +14,7 @@ html, body {
   width: 100%;
 }
 body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; background: #0041af; }
-#root { padding-top: env(safe-area-inset-top); height: 100%; overflow: hidden; }
+#root { height: 100%; overflow: hidden; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

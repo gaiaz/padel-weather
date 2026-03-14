@@ -440,7 +440,7 @@ const App = () => {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
       {/* ── Blue section (fuori dallo scroll — si compatta via animation) ── */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
         {/* ── Header ── */}
         <motion.header
