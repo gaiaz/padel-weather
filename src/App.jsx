@@ -457,8 +457,9 @@ const App = () => {
           animate={{ opacity: 1, y: 0, paddingTop: isScrolled ? 10 : 20, paddingBottom: isScrolled ? 6 : 8 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
           <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
-            <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white" style={{ fontWeight: 700 }}>
+            <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white flex items-center gap-2" style={{ fontWeight: 700 }}>
               Padel<span style={{ color: 'rgba(255,255,255,0.45)' }}>Weather</span>
+              <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" title="Versione aggiornata" aria-hidden />
             </h1>
             <motion.div
               className="flex items-center gap-2 mt-2 overflow-hidden"
