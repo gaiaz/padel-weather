@@ -436,11 +436,158 @@ const App = () => {
   const selectedDayEventCount = selectedDayEvents.length;
 
   return (
-    <motion.div className="h-screen overflow-hidden" style={{ background: BRAND }}
+    <motion.div className="h-screen flex flex-col" style={{ background: BRAND }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
-      {/* ── Single scrollable container ── */}
-      <div className="h-full overflow-y-auto" style={{ overscrollBehavior: 'contain', background: 'white' }}
+      {/* ── Blue section (fuori dallo scroll — si compatta via animation) ── */}
+      <div className="flex-shrink-0">
+
+        {/* ── Header ── */}
+        <motion.header
+          className="flex justify-between items-start px-6"
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0, paddingTop: isScrolled ? 10 : 20, paddingBottom: isScrolled ? 6 : 8 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
+          <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
+            <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white" style={{ fontWeight: 700 }}>
+              Padel<span style={{ color: 'rgba(255,255,255,0.45)' }}>Weather</span>
+            </h1>
+            <motion.div
+              className="flex items-center gap-2 mt-2 overflow-hidden"
+              animate={{ height: isScrolled ? 0 : 20, opacity: isScrolled ? 0 : 1, marginTop: isScrolled ? 0 : 8 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+              <span className="flex items-center gap-1 text-[11px] uppercase font-ibm font-bold text-white/70">
+                <MapPin size={10} className="text-white/50" /> {location}
+              </span>
+              <span className="text-[9px] font-bold px-[9px] py-[3px] rounded-full border border-white/15 text-white/30">
+                {isLive ? 'LIVE' : 'DEMO'}
+              </span>
+            </motion.div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {gcalEnabled && (
+              <motion.button
+                onClick={gcalConnected ? disconnectGCal : connectGCal}
+                className="p-[10px] rounded-[8px] relative"
+                style={{ background: 'rgba(255,255,255,0.12)' }}
+                whileTap={{ scale: 0.88 }} whileHover={{ scale: 1.08 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                title={gcalConnected ? 'Calendario connesso — tap per disconnettere' : 'Connetti Google Calendar'}>
+                <CalendarDays size={17} className="text-white" style={{ opacity: gcalConnected ? 1 : 0.4 }} />
+                {gcalConnected && (
+                  <motion.div
+                    className="absolute top-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-green-400"
+                    initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 20 }} />
+                )}
+              </motion.button>
+            )}
+            <motion.button onClick={() => fetchWeather()} className="p-[10px] rounded-[8px]"
+              style={{ background: 'rgba(255,255,255,0.12)' }}
+              whileTap={{ scale: 0.88, rotate: -30 }} whileHover={{ scale: 1.08 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
+              <RefreshCw size={17} className="text-white" />
+            </motion.button>
+          </div>
+        </motion.header>
+
+        {/* ── Toggle — nascosto quando scrolled ── */}
+        <motion.div
+          className="px-6 overflow-hidden"
+          animate={{ height: isScrolled ? 0 : 'auto', opacity: isScrolled ? 0 : 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+          <div className="py-3">
+            <div className="flex p-1 rounded-[99px]" style={{ background: 'rgba(255,255,255,0.12)' }}>
+              {['outdoor', 'indoor'].map((type) => (
+                <motion.button key={type} onClick={() => setCourtType(type)}
+                  className={`flex-1 py-[10px] text-[12px] rounded-[999px] uppercase font-ibm font-bold ${courtType === type ? 'bg-white' : 'text-white'}`}
+                  style={courtType === type ? { color: BRAND } : {}}
+                  whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                  {type === 'outdoor' ? "All'aperto" : 'Al chiuso'}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Day strip ── */}
+        <div className="overflow-x-auto no-scrollbar w-full">
+          <motion.div
+            className="flex gap-[8px] w-max"
+            animate={{ paddingLeft: 24, paddingRight: 24, paddingTop: isScrolled ? 4 : 4, paddingBottom: isScrolled ? 10 : 16 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+            {weatherData.map((item, i) => {
+              const isSelected = selectedDay === i;
+              const eventCount = gcalConnected ? (calEvents[item.iso]?.length || 0) : 0;
+              return (
+                <motion.button key={i}
+                  onClick={() => { setSelectedDay(i); setSelectedSlot(1); setIsScrolled(false); compactLockedRef.current = false; }}
+                  className="flex-shrink-0 flex flex-col items-center gap-[5.8px] rounded-[6px]"
+                  initial={{ opacity: 0, y: 20, scale: 0.92 }}
+                  animate={{
+                    opacity: 1, y: 0, scale: 1,
+                    width: isScrolled ? 52 : 70,
+                    paddingTop:    isScrolled ? 8  : 14,
+                    paddingBottom: isScrolled ? 8  : 14,
+                    paddingLeft:   isScrolled ? 6  : 14,
+                    paddingRight:  isScrolled ? 6  : 14,
+                  }}
+                  style={isSelected ? { background: 'transparent', border: '2px solid #fff' } : { background: 'rgba(255,255,255,0.1)', border: '2px solid transparent' }}
+                  whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }}
+                  transition={{
+                    opacity:       { duration: 0.3, delay: 0.15 + i * 0.055 },
+                    y:             { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
+                    scale:         { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
+                    width:         { type: 'spring', stiffness: 300, damping: 28 },
+                    paddingTop:    { type: 'spring', stiffness: 300, damping: 28 },
+                    paddingBottom: { type: 'spring', stiffness: 300, damping: 28 },
+                    paddingLeft:   { type: 'spring', stiffness: 300, damping: 28 },
+                    paddingRight:  { type: 'spring', stiffness: 300, damping: 28 },
+                  }}>
+                  <span className="text-[9px] uppercase tracking-[0.9px] font-ibm font-bold text-white/50">{item.day}</span>
+                  <motion.span
+                    className="font-ibm text-white leading-none"
+                    animate={{ fontSize: isScrolled ? 15 : 20 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                    style={{ fontWeight: 600 }}>
+                    {item.date.split(' ')[0]}
+                  </motion.span>
+                  <AnimatePresence>
+                    {!isScrolled && (
+                      <motion.div key="icon"
+                        initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+                        transition={{ duration: 0.15 }}>
+                        {conditionIcon(item, 15)}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <motion.div className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: scoreDotColor(item) }}
+                    initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 + i * 0.04 }} />
+                  <AnimatePresence>
+                    {!isScrolled && gcalConnected && eventCount > 0 && (
+                      <motion.div
+                        className="flex items-center gap-[3px]"
+                        initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                        {Array.from({ length: Math.min(eventCount, 3) }).map((_, j) => (
+                          <div key={j} className="w-[3px] h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.45)' }} />
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        </div>
+
+      </div>{/* end blue section */}
+
+      {/* ── White scroll area — rounded-t sui bordi del container stesso ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto bg-white rounded-t-[36px]"
+        style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)', overscrollBehavior: 'contain' }}
         onScroll={e => {
           const top = e.currentTarget.scrollTop;
           if (top > 5) {
@@ -449,161 +596,13 @@ const App = () => {
               compactLockedRef.current = true;
               setTimeout(() => { compactLockedRef.current = false; }, 400);
             }
-          } else if (top === 0 && !compactLockedRef.current) {
+          } else if (top < 2) {
             setIsScrolled(false);
           }
         }}>
 
-      {/* ── Blue section ── */}
-      <div style={{ background: BRAND }}>
-
-      {/* ── Header ── */}
-      <motion.header
-        className="flex justify-between items-start px-6"
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0, paddingTop: isScrolled ? 10 : 20, paddingBottom: isScrolled ? 6 : 8 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
-        <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
-          <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white" style={{ fontWeight: 700 }}>
-            Padel<span style={{ color: 'rgba(255,255,255,0.45)' }}>Weather</span>
-          </h1>
-          <motion.div
-            className="flex items-center gap-2 mt-2 overflow-hidden"
-            animate={{ height: isScrolled ? 0 : 20, opacity: isScrolled ? 0 : 1, marginTop: isScrolled ? 0 : 8 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
-            <span className="flex items-center gap-1 text-[11px] uppercase font-ibm font-bold text-white/70">
-              <MapPin size={10} className="text-white/50" /> {location}
-            </span>
-            <span className="text-[9px] font-bold px-[9px] py-[3px] rounded-full border border-white/15 text-white/30">
-              {isLive ? 'LIVE' : 'DEMO'}
-            </span>
-          </motion.div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {gcalEnabled && (
-            <motion.button
-              onClick={gcalConnected ? disconnectGCal : connectGCal}
-              className="p-[10px] rounded-[8px] relative"
-              style={{ background: 'rgba(255,255,255,0.12)' }}
-              whileTap={{ scale: 0.88 }} whileHover={{ scale: 1.08 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-              title={gcalConnected ? 'Calendario connesso — tap per disconnettere' : 'Connetti Google Calendar'}>
-              <CalendarDays size={17} className="text-white" style={{ opacity: gcalConnected ? 1 : 0.4 }} />
-              {gcalConnected && (
-                <motion.div
-                  className="absolute top-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-green-400"
-                  initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 20 }} />
-              )}
-            </motion.button>
-          )}
-          <motion.button onClick={() => fetchWeather()} className="p-[10px] rounded-[8px]"
-            style={{ background: 'rgba(255,255,255,0.12)' }}
-            whileTap={{ scale: 0.88, rotate: -30 }} whileHover={{ scale: 1.08 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
-            <RefreshCw size={17} className="text-white" />
-          </motion.button>
-        </div>
-      </motion.header>
-
-      {/* ── Toggle — nascosto quando scrolled ── */}
-      <motion.div
-        className="px-6 overflow-hidden"
-        animate={{ height: isScrolled ? 0 : 'auto', opacity: isScrolled ? 0 : 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
-        <div className="py-3">
-          <div className="flex p-1 rounded-[99px]" style={{ background: 'rgba(255,255,255,0.12)' }}>
-            {['outdoor', 'indoor'].map((type) => (
-              <motion.button key={type} onClick={() => setCourtType(type)}
-                className={`flex-1 py-[10px] text-[12px] rounded-[999px] uppercase font-ibm font-bold ${courtType === type ? 'bg-white' : 'text-white'}`}
-                style={courtType === type ? { color: BRAND } : {}}
-                whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-                {type === 'outdoor' ? "All'aperto" : 'Al chiuso'}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ── Day strip ── */}
-      <div className="overflow-x-auto no-scrollbar w-full">
-        <motion.div
-          className="flex gap-[8px] w-max"
-          animate={{ paddingLeft: 24, paddingRight: 24, paddingTop: isScrolled ? 4 : 8, paddingBottom: isScrolled ? 10 : 28 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
-          {weatherData.map((item, i) => {
-            const isSelected = selectedDay === i;
-            const eventCount = gcalConnected ? (calEvents[item.iso]?.length || 0) : 0;
-            return (
-              <motion.button key={i}
-                onClick={() => { setSelectedDay(i); setSelectedSlot(1); setIsScrolled(false); compactLockedRef.current = false; }}
-                className="flex-shrink-0 flex flex-col items-center gap-[5.8px] rounded-[6px]"
-                initial={{ opacity: 0, y: 20, scale: 0.92 }}
-                animate={{
-                  opacity: 1, y: 0, scale: 1,
-                  width: isScrolled ? 52 : 70,
-                  paddingTop:    isScrolled ? 8  : 14,
-                  paddingBottom: isScrolled ? 8  : 14,
-                  paddingLeft:   isScrolled ? 6  : 14,
-                  paddingRight:  isScrolled ? 6  : 14,
-                }}
-                style={isSelected ? { background: 'transparent', border: '2px solid #fff' } : { background: 'rgba(255,255,255,0.1)', border: '2px solid transparent' }}
-                whileTap={{ scale: 0.92 }} whileHover={{ scale: 1.04 }}
-                transition={{
-                  opacity:       { duration: 0.3, delay: 0.15 + i * 0.055 },
-                  y:             { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
-                  scale:         { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
-                  width:         { type: 'spring', stiffness: 300, damping: 28 },
-                  paddingTop:    { type: 'spring', stiffness: 300, damping: 28 },
-                  paddingBottom: { type: 'spring', stiffness: 300, damping: 28 },
-                  paddingLeft:   { type: 'spring', stiffness: 300, damping: 28 },
-                  paddingRight:  { type: 'spring', stiffness: 300, damping: 28 },
-                }}>
-                <span className="text-[9px] uppercase tracking-[0.9px] font-ibm font-bold text-white/50">{item.day}</span>
-                <motion.span
-                  className="font-ibm text-white leading-none"
-                  animate={{ fontSize: isScrolled ? 15 : 20 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                  style={{ fontWeight: 600 }}>
-                  {item.date.split(' ')[0]}
-                </motion.span>
-                <AnimatePresence>
-                  {!isScrolled && (
-                    <motion.div key="icon"
-                      initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
-                      transition={{ duration: 0.15 }}>
-                      {conditionIcon(item, 15)}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <motion.div className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: scoreDotColor(item) }}
-                  initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 + i * 0.04 }} />
-                <AnimatePresence>
-                  {!isScrolled && gcalConnected && eventCount > 0 && (
-                    <motion.div
-                      className="flex items-center gap-[3px]"
-                      initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-                      {Array.from({ length: Math.min(eventCount, 3) }).map((_, j) => (
-                        <div key={j} className="w-[3px] h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.45)' }} />
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
-        </motion.div>
-      </div>
-
-      </div>{/* end blue section */}
-
-      {/* ── White card ── */}
-      <motion.div className="bg-white rounded-t-[36px]"
-        style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)', minHeight: '100vh', paddingBottom: 'calc(max(env(safe-area-inset-bottom), 32px) + 80px)' }}
-        variants={sheetVariant} initial="hidden" animate="show">
+      {/* inner wrapper — minHeight garantisce che il contenuto superi sempre il container, evitando il loop scroll */}
+      <div style={{ minHeight: '100vh' }}>
 
         {/* Sticky day header */}
         <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-3">
@@ -648,8 +647,8 @@ const App = () => {
           </AnimatePresence>
         </div>
 
-        {/* Scrollable content */}
-        <div className="px-6 flex flex-col gap-3">
+        {/* Content */}
+        <div className="px-6 flex flex-col gap-3 pb-8">
 
         {/* Fascia analizzata */}
         <AnimatePresence mode="wait">
@@ -780,12 +779,12 @@ const App = () => {
 
         </div>{/* end content */}
 
-      </motion.div>{/* end white card */}
+      </div>{/* end inner wrapper */}
 
-      </div>{/* end scrollable container */}
+      </div>{/* end white scroll area */}
 
-      {/* ── CTA fixed bottom ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 bg-white px-6 pt-3 flex gap-2"
+      {/* ── CTA — flex child, sempre visibile in fondo ── */}
+      <div className="bg-white flex-shrink-0 px-6 pt-3 flex gap-2"
         style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
         <motion.button
           onClick={() => window.open(buildGCalLink(), '_blank')}
