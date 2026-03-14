@@ -440,19 +440,22 @@ const App = () => {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
       {/* ── Single scrollable container ── */}
-      <div className="h-full overflow-y-auto" style={{ overscrollBehavior: 'contain' }}
+      <div className="h-full overflow-y-auto" style={{ overscrollBehavior: 'contain', background: 'white' }}
         onScroll={e => {
           const top = e.currentTarget.scrollTop;
-          if (top > 30) {
+          if (top > 5) {
             if (!compactLockedRef.current) {
               setIsScrolled(true);
               compactLockedRef.current = true;
-              setTimeout(() => { compactLockedRef.current = false; }, 500);
+              setTimeout(() => { compactLockedRef.current = false; }, 400);
             }
           } else if (top === 0 && !compactLockedRef.current) {
             setIsScrolled(false);
           }
         }}>
+
+      {/* ── Blue section ── */}
+      <div style={{ background: BRAND }}>
 
       {/* ── Header ── */}
       <motion.header
@@ -594,6 +597,8 @@ const App = () => {
           })}
         </motion.div>
       </div>
+
+      </div>{/* end blue section */}
 
       {/* ── White card ── */}
       <motion.div className="bg-white rounded-t-[36px]"
