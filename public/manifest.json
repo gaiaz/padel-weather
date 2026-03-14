@@ -1,0 +1,21 @@
+{
+  "name": "PadelWeather",
+  "short_name": "PadelWeather",
+  "description": "Previsioni meteo per il padel",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0041af",
+  "theme_color": "#0041af",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
