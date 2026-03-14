@@ -436,7 +436,15 @@ const App = () => {
   const selectedDayEventCount = selectedDayEvents.length;
 
   return (
-    <motion.div className="flex flex-col" style={{ background: BRAND, position: 'fixed', inset: 0 }}
+    <motion.div
+      className="flex flex-col"
+      style={{
+        background: BRAND,
+        position: 'fixed',
+        inset: 0,
+        minHeight: 'var(--app-height, 100vh)',
+        height: '100%',
+      }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
       {/* ── Blue section (fuori dallo scroll — si compatta via animation) ── */}

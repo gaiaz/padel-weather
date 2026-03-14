@@ -6,15 +6,25 @@
 @import "@fontsource/ibm-plex-sans/700.css";
 @import "@fontsource/space-grotesk/700.css";
 
+/* iOS PWA / home screen: --app-height è impostato da main.jsx (window.innerHeight) per evitare spazio vuoto sotto */
+:root {
+  --app-height: 100vh;
+}
+
 html, body {
   overscroll-behavior: none;
   overflow: hidden;
   height: 100%;
+  min-height: var(--app-height);
   position: fixed;
   width: 100%;
 }
 body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; background: #0041af; }
-#root { height: 100%; overflow: hidden; }
+#root {
+  height: 100%;
+  min-height: var(--app-height);
+  overflow: hidden;
+}
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
