@@ -8,7 +8,8 @@ const setAppHeight = () => {
   const vv = window.visualViewport;
   const inner = window.innerHeight;
   const fromVisual = vv ? vv.height : inner;
-  const h = Math.max(inner, fromVisual, 1);
+  const screenH = window.screen.availHeight || window.screen.height || inner;
+  const h = Math.max(inner, fromVisual, screenH, 100);
   document.documentElement.style.setProperty('--app-height', `${h}px`);
 };
 window.addEventListener('resize', setAppHeight);

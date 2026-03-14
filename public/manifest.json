@@ -3,7 +3,9 @@
   "short_name": "PadelWeather",
   "description": "Previsioni meteo per il padel",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0041af",
   "theme_color": "#0041af",
   "icons": [
