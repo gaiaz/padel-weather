@@ -9,11 +9,7 @@ const setAppHeight = () => {
   const inner = window.innerHeight;
   const fromVisual = vv ? vv.height : inner;
   const screenH = window.screen.availHeight || window.screen.height || inner;
-  const standalone = window.matchMedia('(display-mode: standalone)').matches;
-  const extra = standalone ? window.screen.height || 0 : 0;
-  const next = Math.max(inner, fromVisual, screenH, extra, 100);
-  const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--app-height') || '0', 10) || 0;
-  const h = Math.max(cur, next);
+  const h = Math.max(inner, fromVisual, screenH, 100);
   document.documentElement.style.setProperty('--app-height', `${h}px`);
 };
 window.addEventListener('resize', setAppHeight);
@@ -28,7 +24,7 @@ window.addEventListener('pageshow', (e) => e.persisted && setAppHeight());
 setAppHeight();
 // Secondo pass dopo il layout (utile su iOS standalone al primo caricamento)
 requestAnimationFrame(setAppHeight);
-[100, 300, 500, 800, 1200, 2000, 3000, 5000].forEach((ms) => setTimeout(setAppHeight, ms));
+[100, 300, 500, 800, 1200, 2000].forEach((ms) => setTimeout(setAppHeight, ms));
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
