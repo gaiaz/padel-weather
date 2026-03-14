@@ -436,14 +436,29 @@ const App = () => {
   const selectedDayEventCount = selectedDayEvents.length;
 
   return (
-    <motion.div className="h-screen flex flex-col" style={{ background: BRAND }}
+    <motion.div className="h-screen overflow-hidden" style={{ background: BRAND }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
+
+      {/* ── Single scrollable container ── */}
+      <div className="h-full overflow-y-auto" style={{ overscrollBehavior: 'contain' }}
+        onScroll={e => {
+          const top = e.currentTarget.scrollTop;
+          if (top > 30) {
+            if (!compactLockedRef.current) {
+              setIsScrolled(true);
+              compactLockedRef.current = true;
+              setTimeout(() => { compactLockedRef.current = false; }, 500);
+            }
+          } else if (top === 0 && !compactLockedRef.current) {
+            setIsScrolled(false);
+          }
+        }}>
 
       {/* ── Header ── */}
       <motion.header
         className="flex justify-between items-start px-6"
         initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0, paddingTop: isScrolled ? 10 : 24, paddingBottom: isScrolled ? 6 : 8 }}
+        animate={{ opacity: 1, y: 0, paddingTop: isScrolled ? 10 : 20, paddingBottom: isScrolled ? 6 : 8 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
         <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
           <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white" style={{ fontWeight: 700 }}>
@@ -580,56 +595,56 @@ const App = () => {
         </motion.div>
       </div>
 
-      {/* ── White bottom sheet ── */}
-      <motion.div className="flex-1 bg-white rounded-t-[36px] flex flex-col overflow-hidden"
-        style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}
+      {/* ── White card ── */}
+      <motion.div className="bg-white rounded-t-[36px]"
+        style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)', minHeight: '100vh', paddingBottom: 'calc(max(env(safe-area-inset-bottom), 32px) + 80px)' }}
         variants={sheetVariant} initial="hidden" animate="show">
-      <div className="flex-1 overflow-y-auto px-6 pt-6 pb-2 flex flex-col gap-3"
-        style={{ overscrollBehavior: 'contain' }}
-        onScroll={e => {
-          const top = e.currentTarget.scrollTop;
-          if (top > 30) {
-            if (!compactLockedRef.current) {
-              // Attiva compact + lock per 500ms (evita bounce iOS)
-              setIsScrolled(true);
-              compactLockedRef.current = true;
-              setTimeout(() => { compactLockedRef.current = false; }, 500);
-            }
-          } else if (top === 0 && !compactLockedRef.current) {
-            // De-compatta solo se scrollTop è tornato a 0 E il lock è scaduto
-            setIsScrolled(false);
-          }
-        }}>
 
-        {/* Day + temp */}
-        <AnimatePresence mode="wait">
-          <motion.div key={`header-${selectedDay}`} className="flex items-start justify-between" {...contentSwap}>
-            <div className="flex flex-col gap-1">
-              <h2 className="text-[36px] leading-[42px] tracking-[-1.8px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
-              <div className="flex items-center gap-3">
-                <p className="font-ibm text-[18px] leading-[19.25px] text-[#364458]" style={{ fontWeight: 500 }}>{day.date}</p>
-                <AnimatePresence>
-                  {gcalConnected && selectedDayEventCount > 0 && (
-                    <motion.div
-                      className="flex items-center gap-[5px]"
-                      initial={{ opacity: 0, x: -6 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -6 }}
-                      transition={{ duration: 0.2 }}>
-                      <CalendarDays size={11} style={{ color: '#90a1b9' }} />
-                      <span className="font-ibm text-[11px] text-[#90a1b9]" style={{ fontWeight: 600 }}>
-                        {selectedDayEventCount} {selectedDayEventCount === 1 ? 'impegno' : 'impegni'}
-                      </span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-            <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px] text-white" style={{ fontWeight: 500, background: BRAND }}>
-              {day.tempMax}°
-            </div>
-          </motion.div>
-        </AnimatePresence>
+        {/* Sticky day header */}
+        <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-3">
+          <AnimatePresence mode="wait">
+            <motion.div key={`header-${selectedDay}-${isScrolled}`} {...contentSwap}>
+              {isScrolled ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-ibm text-[20px] tracking-[-0.5px] text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</span>
+                    <span className="font-ibm text-[14px] text-[#90a1b9]" style={{ fontWeight: 500 }}>{day.date}</span>
+                  </div>
+                  <div className="px-3 py-[6px] rounded-[8px] font-ibm text-[18px] text-white" style={{ fontWeight: 500, background: BRAND }}>
+                    {day.tempMax}°
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-1">
+                    <h2 className="text-[36px] leading-[42px] tracking-[-1.8px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
+                    <div className="flex items-center gap-3">
+                      <p className="font-ibm text-[18px] leading-[19.25px] text-[#364458]" style={{ fontWeight: 500 }}>{day.date}</p>
+                      <AnimatePresence>
+                        {gcalConnected && selectedDayEventCount > 0 && (
+                          <motion.div className="flex items-center gap-[5px]"
+                            initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }}
+                            transition={{ duration: 0.2 }}>
+                            <CalendarDays size={11} style={{ color: '#90a1b9' }} />
+                            <span className="font-ibm text-[11px] text-[#90a1b9]" style={{ fontWeight: 600 }}>
+                              {selectedDayEventCount} {selectedDayEventCount === 1 ? 'impegno' : 'impegni'}
+                            </span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                  <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px] text-white" style={{ fontWeight: 500, background: BRAND }}>
+                    {day.tempMax}°
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="px-6 flex flex-col gap-3">
 
         {/* Fascia analizzata */}
         <AnimatePresence mode="wait">
@@ -758,39 +773,41 @@ const App = () => {
           </AnimatePresence>
         </div>
 
-        </div>{/* end scrollable */}
+        </div>{/* end content */}
 
-        {/* CTA sticky bottom */}
-        <div className="bg-white px-6 pt-3 flex gap-2"
-          style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
-          <motion.button
-            onClick={() => window.open(buildGCalLink(), '_blank')}
-            className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
-            style={{ fontWeight: 500, background: BRAND }}
-            whileHover={{ scale: 1.015, boxShadow: `0 8px 28px ${BRAND}55` }}
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 20 }}>
-            Aggiungi partita
-          </motion.button>
-          <motion.button
-            onClick={handleShare}
-            className="px-5 py-[17px] rounded-[8px] flex items-center justify-center"
-            style={{ background: '#f1f5f9' }}
-            whileTap={{ scale: 0.93 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 20 }}>
-            <AnimatePresence mode="wait">
-              <motion.span key={copyFeedback ? 'ok' : 'share'}
-                initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }}
-                transition={{ duration: 0.15 }}>
-                {copyFeedback
-                  ? <CheckCircle2 size={20} style={{ color: '#16a34a' }} />
-                  : <Share size={20} style={{ color: '#364458' }} />}
-              </motion.span>
-            </AnimatePresence>
-          </motion.button>
-        </div>
+      </motion.div>{/* end white card */}
 
-      </motion.div>
+      </div>{/* end scrollable container */}
+
+      {/* ── CTA fixed bottom ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-white px-6 pt-3 flex gap-2"
+        style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}>
+        <motion.button
+          onClick={() => window.open(buildGCalLink(), '_blank')}
+          className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
+          style={{ fontWeight: 500, background: BRAND }}
+          whileHover={{ scale: 1.015, boxShadow: `0 8px 28px ${BRAND}55` }}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 20 }}>
+          Aggiungi partita
+        </motion.button>
+        <motion.button
+          onClick={handleShare}
+          className="px-5 py-[17px] rounded-[8px] flex items-center justify-center"
+          style={{ background: '#f1f5f9' }}
+          whileTap={{ scale: 0.93 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 20 }}>
+          <AnimatePresence mode="wait">
+            <motion.span key={copyFeedback ? 'ok' : 'share'}
+              initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }}
+              transition={{ duration: 0.15 }}>
+              {copyFeedback
+                ? <CheckCircle2 size={20} style={{ color: '#16a34a' }} />
+                : <Share size={20} style={{ color: '#364458' }} />}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
+      </div>
 
       {/* ── Location modal ── */}
       <AnimatePresence>
