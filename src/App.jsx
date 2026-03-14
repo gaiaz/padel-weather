@@ -437,7 +437,7 @@ const App = () => {
 
   return (
     <motion.div
-      className="flex flex-col"
+      className="flex flex-col app-fullheight"
       style={{
         background: BRAND,
         position: 'fixed',
