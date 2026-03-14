@@ -4,12 +4,16 @@
     <meta charset="UTF-8" />
     <script>
       (function() {
+        var standalone = function() { return window.matchMedia('(display-mode: standalone)').matches; };
         var setH = function() {
           var inner = window.innerHeight;
           var v = window.visualViewport;
           var vh = (v && v.height) ? v.height : inner;
           var screenH = window.screen.availHeight || window.screen.height || inner;
-          var h = Math.max(inner, vh, screenH, 100);
+          var extra = standalone() ? (window.screen.height || 0) : 0;
+          var next = Math.max(inner, vh, screenH, extra, 100);
+          var cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--app-height') || '0', 10) || 0;
+          var h = Math.max(cur, next);
           document.documentElement.style.setProperty('--app-height', h + 'px');
         };
         setH();
