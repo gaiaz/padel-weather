@@ -6,15 +6,24 @@
 @import "@fontsource/ibm-plex-sans/700.css";
 @import "@fontsource/space-grotesk/700.css";
 
-html, body {
-  overscroll-behavior: none;
-  overflow: hidden;
+html {
   height: 100%;
-  position: fixed;
-  width: 100%;
+  overflow: hidden;
 }
-body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; background: #0041af; }
-#root { padding-top: env(safe-area-inset-top); height: 100dvh; overflow: hidden; }
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: 'Geist Variable', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #0041af;
+}
+#root {
+  height: 100%;
+  padding-top: env(safe-area-inset-top);
+  overflow: hidden;
+  box-sizing: border-box;
+}
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
