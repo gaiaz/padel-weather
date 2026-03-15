@@ -613,7 +613,7 @@ const App = () => {
               <motion.div
                 className="absolute top-1 bottom-1 rounded-[999px] bg-white"
                 style={{ width: 'calc(50% - 4px)', left: 4 }}
-                animate={{ x: courtType === 'outdoor' ? 0 : 'calc(100% + 8px)' }}
+                animate={{ x: courtType === 'outdoor' ? 0 : '100%' }}
                 transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
               />
               {['outdoor', 'indoor'].map((type) => (
