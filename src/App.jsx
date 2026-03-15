@@ -607,7 +607,10 @@ const App = () => {
         <div className="overflow-y-auto"
           style={{ maxHeight: `calc(100dvh - ${blueH}px)`, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
           onScroll={e => {
-            const top = e.currentTarget.scrollTop;
+            const el = e.currentTarget;
+            const top = el.scrollTop;
+            // ignora rubber-band iOS: agisci solo se c'è overflow reale
+            if (el.scrollHeight <= el.clientHeight + 10) return;
             if (top > 24) {
               if (!compactLockedRef.current) {
                 setIsScrolled(true);
