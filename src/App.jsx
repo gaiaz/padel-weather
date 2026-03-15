@@ -440,7 +440,7 @@ const App = () => {
       className="flex flex-col"
       style={{
         background: BRAND,
-        minHeight: '100dvh',
+        height: '100dvh',
       }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
