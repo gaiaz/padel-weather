@@ -98,6 +98,7 @@ const App = () => {
   const [isLocModalOpen, setIsLocModalOpen] = useState(false);
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isLive, setIsLive] = useState(false);
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -119,8 +120,15 @@ const App = () => {
   /* ── Google Calendar state ── */
   const [gcalConnected, setGcalConnected] = useState(false);
   const [gcalToken, setGcalToken] = useState(null);
-  const [calEvents, setCalEvents] = useState({}); // { 'YYYY-MM-DD': [{ title, startTime, endTime, allDay, slot }] }
+  const [calEvents, setCalEvents] = useState({});
+  const [calendarList, setCalendarList] = useState([]);
+  const [selectedCalIds, setSelectedCalIds] = useState(() => {
+    const saved = localStorage.getItem('gcal_selected_cals');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isCalSettingsOpen, setIsCalSettingsOpen] = useState(false);
   const gcalClientRef = useRef(null);
+  const gcalTokenRef = useRef(null);
 
   const slotDetails = [
     { range: '08:00 - 12:00' },
@@ -172,12 +180,13 @@ const App = () => {
     return vals.sort((a, b) => b - a)[0];
   };
 
-  const fetchWeather = async () => {
+  const fetchWeather = async (loc = location) => {
     try {
-      setLoading(true);
+      if (weatherData) { setRefreshing(true); } else { setLoading(true); }
+      setIsScrolled(false);
       // 1. Geocoding
       const geoRes = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=it&format=json`
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(loc)}&count=1&language=it&format=json`
       );
       const geoData = await geoRes.json();
       const place = geoData.results?.[0];
@@ -244,6 +253,7 @@ const App = () => {
     setWeatherData(data.map(d => ({ ...d, score: calculatePadelScore(d) })));
     setIsLive(liveStatus);
     setLoading(false);
+    setRefreshing(false);
   };
 
   const calculatePadelScore = (d) => {
@@ -274,7 +284,7 @@ const App = () => {
     return <Sun className="text-amber-300" size={size} />;
   };
 
-  useEffect(() => { fetchWeather(); }, [location]);
+  useEffect(() => { fetchWeather(); }, []);
   useEffect(() => {
     if (rawDataRef.current.length > 0) {
       setCourtVisible(false);
@@ -299,8 +309,10 @@ const App = () => {
           if (response.access_token) {
             localStorage.setItem('gcal_token', response.access_token);
             localStorage.setItem('gcal_expiry', String(Date.now() + 30 * 24 * 3600 * 1000));
+            gcalTokenRef.current = response.access_token;
             setGcalToken(response.access_token);
             setGcalConnected(true);
+            fetchCalendarList(response.access_token);
           }
         },
         error_callback: () => { /* silent re-auth fallita, utente riconnette manualmente */ },
@@ -317,9 +329,14 @@ const App = () => {
     return () => { if (document.head.contains(script)) document.head.removeChild(script); };
   }, []);
 
-  /* ── Fetch calendar events when token changes ── */
+  /* ── Fetch calendar events when token or selection changes ── */
   useEffect(() => {
     if (gcalToken) fetchCalendarEvents(gcalToken);
+  }, [gcalToken, selectedCalIds]);
+
+  /* ── Fetch calendar list when token is restored from localStorage ── */
+  useEffect(() => {
+    if (gcalToken && calendarList.length === 0) fetchCalendarList(gcalToken);
   }, [gcalToken]);
 
   const connectGCal = () => {
@@ -331,8 +348,12 @@ const App = () => {
     setGcalConnected(false);
     setGcalToken(null);
     setCalEvents({});
+    setCalendarList([]);
+    setSelectedCalIds(null);
+    setIsCalSettingsOpen(false);
     localStorage.removeItem('gcal_token');
     localStorage.removeItem('gcal_expiry');
+    localStorage.removeItem('gcal_selected_cals');
   };
 
   const timeToSlotName = (dateTimeStr) => {
@@ -349,45 +370,73 @@ const App = () => {
     return new Date(dateTimeStr).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const fetchCalendarEvents = async (token) => {
+  const fetchCalendarEvents = async (token, calIds) => {
+    const ids = calIds ?? selectedCalIds ?? ['primary'];
+    if (!ids.length) { setCalEvents({}); return; }
     try {
       const now = new Date();
       const end = new Date(now);
       end.setDate(end.getDate() + 14);
+      const params = `timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`;
 
-      const res = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (res.status === 401) {
-        // Token scaduto (1h Google) — silent re-auth e riprova
-        localStorage.removeItem('gcal_token');
-        setGcalToken(null);
-        if (gcalClientRef.current) gcalClientRef.current.requestAccessToken({ prompt: '' });
-        return;
-      }
-      if (!res.ok) { setGcalConnected(false); setGcalToken(null); return; }
-
-      const data = await res.json();
       const grouped = {};
-      (data.items || []).forEach(event => {
-        const dateStr = (event.start.dateTime || event.start.date || '').substring(0, 10);
-        if (!dateStr) return;
-        if (!grouped[dateStr]) grouped[dateStr] = [];
-        const allDay = !event.start.dateTime;
-        grouped[dateStr].push({
-          title:     event.summary || 'Evento',
-          startTime: event.start.dateTime || null,
-          endTime:   event.end.dateTime || null,
-          allDay,
-          slot:      allDay ? null : timeToSlotName(event.start.dateTime),
+      const addEvents = (items) => {
+        (items || []).forEach(event => {
+          const dateStr = (event.start.dateTime || event.start.date || '').substring(0, 10);
+          if (!dateStr) return;
+          if (!grouped[dateStr]) grouped[dateStr] = [];
+          const allDay = !event.start.dateTime;
+          grouped[dateStr].push({
+            title:     event.summary || 'Evento',
+            startTime: event.start.dateTime || null,
+            endTime:   event.end.dateTime || null,
+            allDay,
+            slot:      allDay ? null : timeToSlotName(event.start.dateTime),
+          });
         });
-      });
+      };
+
+      const results = await Promise.all(ids.map(async (calId) => {
+        try {
+          const res = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${params}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (res.status === 401) {
+            localStorage.removeItem('gcal_token');
+            setGcalToken(null);
+            if (gcalClientRef.current) gcalClientRef.current.requestAccessToken({ prompt: '' });
+            return null;
+          }
+          if (!res.ok) return null;
+          return await res.json();
+        } catch { return null; }
+      }));
+
+      results.forEach(data => data && addEvents(data.items));
       setCalEvents(grouped);
     } catch (e) {
       console.error('Calendar fetch error', e);
     }
+  };
+
+  const fetchCalendarList = async (token) => {
+    try {
+      const res = await fetch(
+        'https://www.googleapis.com/calendar/v3/users/me/calendarList',
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const cals = (data.items || []);
+      setCalendarList(cals);
+      const saved = localStorage.getItem('gcal_selected_cals');
+      if (!saved) {
+        const allIds = cals.map(c => c.id);
+        setSelectedCalIds(allIds);
+        localStorage.setItem('gcal_selected_cals', JSON.stringify(allIds));
+      }
+    } catch {}
   };
 
   const day  = weatherData?.[selectedDay];
@@ -510,7 +559,7 @@ const App = () => {
           <div className="flex items-center gap-2">
             {gcalEnabled && (
               <motion.button
-                onClick={gcalConnected ? disconnectGCal : connectGCal}
+                onClick={gcalConnected ? () => setIsCalSettingsOpen(true) : connectGCal}
                 className="p-[10px] rounded-[8px] relative"
                 style={{ background: 'rgba(255,255,255,0.12)' }}
                 whileTap={{ scale: 0.88 }} whileHover={{ scale: 1.08 }}
@@ -529,7 +578,7 @@ const App = () => {
               style={{ background: 'rgba(255,255,255,0.12)' }}
               whileTap={{ scale: 0.88, rotate: -30 }} whileHover={{ scale: 1.08 }}
               transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
-              <motion.div animate={loading ? { rotate: 360 } : { rotate: 0 }} transition={loading ? { repeat: Infinity, duration: 0.8, ease: 'linear' } : {}}>
+              <motion.div animate={refreshing ? { rotate: 360 } : { rotate: 0 }} transition={refreshing ? { repeat: Infinity, duration: 0.8, ease: 'linear' } : {}}>
                 <RefreshCw size={17} className="text-white" />
               </motion.div>
             </motion.button>
@@ -870,13 +919,67 @@ const App = () => {
         </motion.button>
       </div>
 
+      {/* ── Calendar settings modal ── */}
+      <AnimatePresence>
+        {isCalSettingsOpen && (
+          <motion.div className="fixed inset-0 z-50 flex items-end" style={{ backdropFilter: 'blur(8px)', cursor: 'pointer' }}
+            initial={{ background: 'rgba(0,0,0,0)' }} animate={{ background: 'rgba(0,0,0,0.6)' }} exit={{ background: 'rgba(0,0,0,0)' }}
+            transition={{ duration: 0.25 }} onClick={() => setIsCalSettingsOpen(false)}>
+            <motion.div className="w-full bg-white rounded-t-[32px] px-6 pt-6"
+              style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))', cursor: 'default', maxHeight: '80dvh', display: 'flex', flexDirection: 'column' }}
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 280, damping: 30 }}
+              onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                <h3 className="font-ibm text-xl" style={{ fontWeight: 700 }}>Calendari</h3>
+                <button onClick={() => setIsCalSettingsOpen(false)} className="p-2 rounded-xl bg-slate-100"><X size={18} /></button>
+              </div>
+
+              <div className="flex flex-col gap-1 mb-5 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {calendarList.map(cal => {
+                  const isSelected = (selectedCalIds ?? []).includes(cal.id);
+                  const color = cal.backgroundColor || BRAND;
+                  return (
+                    <button key={cal.id}
+                      onClick={() => {
+                        const current = selectedCalIds ?? [];
+                        const next = isSelected ? current.filter(id => id !== cal.id) : [...current, cal.id];
+                        setSelectedCalIds(next);
+                        localStorage.setItem('gcal_selected_cals', JSON.stringify(next));
+                      }}
+                      className="flex items-center gap-3 py-3 px-4 rounded-[12px] text-left"
+                      style={{ background: isSelected ? '#f8fafc' : 'transparent' }}>
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: color }} />
+                      <span className="font-ibm text-[15px] flex-1 text-[#1a2535]" style={{ fontWeight: 500 }}>
+                        {cal.summary}
+                      </span>
+                      <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                        style={{ borderColor: isSelected ? color : '#cbd5e1', background: isSelected ? color : 'transparent' }}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button onClick={disconnectGCal}
+                className="w-full py-4 rounded-[12px] font-ibm text-[15px] text-red-500"
+                style={{ fontWeight: 500, background: '#fff1f2', border: '1px solid #fecdd3' }}>
+                Disconnetti calendario
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Location modal ── */}
       <AnimatePresence>
         {isLocModalOpen && (
-          <motion.div className="fixed inset-0 z-50 flex items-end" style={{ backdropFilter: 'blur(8px)' }}
+          <motion.div className="fixed inset-0 z-50 flex items-end" style={{ backdropFilter: 'blur(8px)', cursor: 'pointer' }}
             initial={{ background: 'rgba(0,0,0,0)' }} animate={{ background: 'rgba(0,0,0,0.6)' }} exit={{ background: 'rgba(0,0,0,0)' }}
             transition={{ duration: 0.25 }} onClick={() => setIsLocModalOpen(false)}>
             <motion.div className="w-full bg-white rounded-t-[32px] px-6 pt-6 pb-12"
+              style={{ cursor: 'default' }}
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 280, damping: 30 }}
               onClick={e => e.stopPropagation()}>
@@ -885,11 +988,11 @@ const App = () => {
                 <button onClick={() => setIsLocModalOpen(false)} className="p-2 rounded-xl bg-slate-100"><X size={18} /></button>
               </div>
               <input type="text" value={tempLocation} onChange={e => setTempLocation(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && tempLocation) { setLocation(tempLocation); setIsLocModalOpen(false); } }}
+                onKeyDown={e => { if (e.key === 'Enter' && tempLocation) { setIsLocModalOpen(false); setLocation(tempLocation); setTimeout(() => fetchWeather(tempLocation), 320); } }}
                 placeholder="Es. Milano, Roma, 20100…"
                 className="w-full bg-slate-100 rounded-2xl py-4 px-5 font-ibm font-bold text-lg mb-4 outline-none placeholder:text-slate-400"
                 autoFocus />
-              <motion.button onClick={() => { if (tempLocation) { setLocation(tempLocation); setIsLocModalOpen(false); } }}
+              <motion.button onClick={() => { if (tempLocation) { setIsLocModalOpen(false); setLocation(tempLocation); setTimeout(() => fetchWeather(tempLocation), 320); } }}
                 className="w-full py-4 rounded-[8px] font-ibm text-white text-sm uppercase tracking-wider"
                 style={{ fontWeight: 700, background: BRAND }} whileTap={{ scale: 0.97 }}>
                 Aggiorna radar →
