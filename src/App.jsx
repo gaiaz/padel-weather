@@ -454,8 +454,8 @@ const App = () => {
     }
   };
 
-  /* ── Loading ── */
-  if (loading) return (
+  /* ── Loading (solo al primo avvio, non sui refresh) ── */
+  if (loading && weatherData.length === 0) return (
     <motion.div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: BRAND }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
 
@@ -529,7 +529,9 @@ const App = () => {
               style={{ background: 'rgba(255,255,255,0.12)' }}
               whileTap={{ scale: 0.88, rotate: -30 }} whileHover={{ scale: 1.08 }}
               transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
-              <RefreshCw size={17} className="text-white" />
+              <motion.div animate={loading ? { rotate: 360 } : { rotate: 0 }} transition={loading ? { repeat: Infinity, duration: 0.8, ease: 'linear' } : {}}>
+                <RefreshCw size={17} className="text-white" />
+              </motion.div>
             </motion.button>
           </div>
         </motion.header>
