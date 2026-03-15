@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "@fontsource-variable/geist";
 @import "@fontsource/ibm-plex-sans/400.css";
 @import "@fontsource/ibm-plex-sans/500.css";
 @import "@fontsource/ibm-plex-sans/600.css";
@@ -13,7 +12,7 @@ html, body {
   min-height: 100%;
   overscroll-behavior: none;
 }
-body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; background: #0041af; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; background: #0041af; }
 #root { min-height: 100%; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }

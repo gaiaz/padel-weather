@@ -879,13 +879,13 @@ const App = () => {
               transition={{ type: 'spring', stiffness: 280, damping: 30 }}
               onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-black tracking-tight">Zona di gioco</h3>
+                <h3 className="font-ibm text-2xl font-black tracking-tight">Zona di gioco</h3>
                 <button onClick={() => setIsLocModalOpen(false)} className="p-2 rounded-xl bg-slate-100"><X size={18} /></button>
               </div>
               <input type="text" value={tempLocation} onChange={e => setTempLocation(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && tempLocation) { setLocation(tempLocation); setIsLocModalOpen(false); } }}
                 placeholder="Es. Milano, Roma, 20100…"
-                className="w-full bg-slate-100 rounded-2xl py-4 px-5 font-bold text-lg mb-4 outline-none placeholder:text-slate-400"
+                className="w-full bg-slate-100 rounded-2xl py-4 px-5 font-ibm font-bold text-lg mb-4 outline-none placeholder:text-slate-400"
                 autoFocus />
               <motion.button onClick={() => { if (tempLocation) { setLocation(tempLocation); setIsLocModalOpen(false); } }}
                 className="w-full py-4 rounded-[8px] font-ibm text-white text-sm uppercase tracking-wider"
