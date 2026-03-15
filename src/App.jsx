@@ -103,6 +103,15 @@ const App = () => {
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const compactLockedRef = useRef(false);
+  const blueRef = useRef(null);
+  const [blueH, setBlueH] = useState(200);
+  useEffect(() => {
+    const el = blueRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setBlueH(entry.contentRect.height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   /* ── Google Calendar state ── */
   const [gcalConnected, setGcalConnected] = useState(false);
@@ -440,12 +449,12 @@ const App = () => {
       className="flex flex-col"
       style={{
         background: BRAND,
-        height: '100dvh',
+        minHeight: '100dvh',
       }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
       {/* ── Blue section (fuori dallo scroll — si compatta via animation) ── */}
-      <div className="flex-shrink-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div ref={blueRef} className="flex-shrink-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
         {/* ── Header ── */}
         <motion.header
@@ -595,9 +604,9 @@ const App = () => {
       <div className="flex-1 min-h-0 bg-white rounded-t-[36px]"
         style={{ overflow: 'clip', boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}>
 
-        {/* ── Scroll area ── */}
-        <div className="h-full overflow-y-auto"
-          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        {/* ── Scroll area — max-height basato su blue section misurata, scolla interno senza overflow:hidden su body ── */}
+        <div className="overflow-y-auto"
+          style={{ maxHeight: `calc(100dvh - ${blueH}px)`, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
           onScroll={e => {
             const top = e.currentTarget.scrollTop;
             if (top > 24) {

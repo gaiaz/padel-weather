@@ -10,12 +10,11 @@
 
 html, body {
   margin: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   overscroll-behavior: none;
 }
 body { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; background: #0041af; }
-#root { height: 100%; overflow: hidden; }
+#root { min-height: 100%; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
