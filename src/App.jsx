@@ -96,6 +96,7 @@ const App = () => {
   const [location, setLocation] = useState('Roma');
   const [tempLocation, setTempLocation] = useState('');
   const [isLocModalOpen, setIsLocModalOpen] = useState(false);
+  const locInputRef = useRef(null);
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -285,6 +286,22 @@ const App = () => {
   };
 
   useEffect(() => { fetchWeather(); }, []);
+
+  // Body lock: previene lo shift iOS quando la tastiera appare/sparisce nella modale
+  useEffect(() => {
+    if (isLocModalOpen) {
+      document.body.style.position = 'fixed';
+      document.body.style.top = '0';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+    } else {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+    }
+  }, [isLocModalOpen]);
+
   useEffect(() => {
     if (rawDataRef.current.length > 0) {
       setCourtVisible(false);
@@ -538,7 +555,7 @@ const App = () => {
           className="flex justify-between items-start px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, paddingTop: isScrolled ? 10 : 20, paddingBottom: isScrolled ? 6 : 8 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
+          transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
           <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
             <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white flex items-center gap-2" style={{ fontWeight: 700 }}>
               Padel<span style={{ color: 'rgba(255,255,255,0.45)' }}>Weather</span>
@@ -546,7 +563,7 @@ const App = () => {
             <motion.div
               className="flex items-center gap-2 mt-2 overflow-hidden"
               animate={{ height: isScrolled ? 0 : 20, opacity: isScrolled ? 0 : 1, marginTop: isScrolled ? 0 : 8 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+              transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
               <span className="flex items-center gap-1 text-[11px] uppercase font-ibm font-bold text-white/70">
                 <MapPin size={10} className="text-white/50" /> {location}
               </span>
@@ -589,7 +606,7 @@ const App = () => {
         <motion.div
           className="px-6 overflow-hidden"
           animate={{ height: isScrolled ? 0 : 'auto', opacity: isScrolled ? 0 : 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
+          transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
           <div className="py-3">
             <div className="flex p-1 rounded-[99px] relative" style={{ background: 'rgba(255,255,255,0.12)' }}>
               {/* pill scorrevole */}
@@ -639,11 +656,11 @@ const App = () => {
                     opacity:       { duration: 0.3, delay: 0.15 + i * 0.055 },
                     y:             { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
                     scale:         { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
-                    width:         { type: 'spring', stiffness: 300, damping: 28 },
-                    paddingTop:    { type: 'spring', stiffness: 300, damping: 28 },
-                    paddingBottom: { type: 'spring', stiffness: 300, damping: 28 },
-                    paddingLeft:   { type: 'spring', stiffness: 300, damping: 28 },
-                    paddingRight:  { type: 'spring', stiffness: 300, damping: 28 },
+                    width:         { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
+                    paddingTop:    { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
+                    paddingBottom: { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
+                    paddingLeft:   { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
+                    paddingRight:  { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
                   }}>
                   <span className="text-[9px] uppercase tracking-[0.9px] font-ibm font-bold text-white/50">{item.day}</span>
                   <motion.span
@@ -704,7 +721,7 @@ const App = () => {
           onScroll={e => {
             const el = e.currentTarget;
             const top = el.scrollTop;
-            if (top > 5) {
+            if (top > 1) {
               if (!compactLockedRef.current) {
                 setIsScrolled(true);
                 compactLockedRef.current = true;
@@ -727,7 +744,7 @@ const App = () => {
                   <span className="font-ibm text-[20px] tracking-[-0.5px] text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</span>
                   <span className="font-ibm text-[14px] text-[#90a1b9]" style={{ fontWeight: 500 }}>{day.date}</span>
                 </div>
-                <div className="px-3 py-[6px] rounded-[8px] font-ibm text-[18px] text-white" style={{ fontWeight: 500, background: BRAND }}>
+                <div className="px-3 py-[6px] rounded-[8px] font-ibm text-[18px]" style={{ fontWeight: 500, background: '#f0f0ff', color: BRAND }}>
                   {day.tempMax}°
                 </div>
               </div>
@@ -758,7 +775,7 @@ const App = () => {
                         </AnimatePresence>
                       </div>
                     </div>
-                    <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px] text-white" style={{ fontWeight: 500, background: BRAND }}>
+                    <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px]" style={{ fontWeight: 500, background: '#f0f0ff', color: BRAND }}>
                       {day.tempMax}°
                     </div>
                   </div>
@@ -987,7 +1004,7 @@ const App = () => {
                 <h3 className="font-ibm text-2xl font-black tracking-tight">Zona di gioco</h3>
                 <button onClick={() => setIsLocModalOpen(false)} className="p-2 rounded-xl bg-slate-100"><X size={18} /></button>
               </div>
-              <input type="text" value={tempLocation} onChange={e => setTempLocation(e.target.value)}
+              <input ref={locInputRef} type="text" value={tempLocation} onChange={e => setTempLocation(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && tempLocation) { setIsLocModalOpen(false); setLocation(tempLocation); setTimeout(() => fetchWeather(tempLocation), 320); } }}
                 placeholder="Es. Milano, Roma, 20100…"
                 className="w-full bg-slate-100 rounded-2xl py-4 px-5 font-ibm font-bold text-lg mb-4 outline-none placeholder:text-slate-400"
