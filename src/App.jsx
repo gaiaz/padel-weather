@@ -102,9 +102,11 @@ const App = () => {
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [courtVisible, setCourtVisible] = useState(true);
   const compactLockedRef = useRef(false);
   const touchStartYRef = useRef(0);
   const blueRef = useRef(null);
+  const rawDataRef = useRef([]);
   const [blueH, setBlueH] = useState(200);
   useEffect(() => {
     const el = blueRef.current;
@@ -238,6 +240,7 @@ const App = () => {
   };
 
   const processData = (data, liveStatus) => {
+    rawDataRef.current = data;
     setWeatherData(data.map(d => ({ ...d, score: calculatePadelScore(d) })));
     setIsLive(liveStatus);
     setLoading(false);
@@ -271,7 +274,16 @@ const App = () => {
     return <Sun className="text-amber-300" size={size} />;
   };
 
-  useEffect(() => { fetchWeather(); }, [courtType, location]);
+  useEffect(() => { fetchWeather(); }, [location]);
+  useEffect(() => {
+    if (rawDataRef.current.length > 0) {
+      setCourtVisible(false);
+      setTimeout(() => {
+        setWeatherData(rawDataRef.current.map(d => ({ ...d, score: calculatePadelScore(d) })));
+        setCourtVisible(true);
+      }, 160);
+    }
+  }, [courtType]);
 
   /* ── Google Calendar: load GIS script ── */
   useEffect(() => {
@@ -513,20 +525,27 @@ const App = () => {
           animate={{ height: isScrolled ? 0 : 'auto', opacity: isScrolled ? 0 : 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
           <div className="py-3">
-            <div className="flex p-1 rounded-[99px]" style={{ background: 'rgba(255,255,255,0.12)' }}>
+            <div className="flex p-1 rounded-[99px] relative" style={{ background: 'rgba(255,255,255,0.12)' }}>
+              {/* pill scorrevole */}
+              <motion.div
+                className="absolute top-1 bottom-1 rounded-[999px] bg-white"
+                style={{ width: 'calc(50% - 4px)', left: 4 }}
+                animate={{ x: courtType === 'outdoor' ? 0 : 'calc(100% + 8px)' }}
+                transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+              />
               {['outdoor', 'indoor'].map((type) => (
-                <motion.button key={type} onClick={() => setCourtType(type)}
-                  className={`flex-1 py-[10px] text-[12px] rounded-[999px] uppercase font-ibm font-bold ${courtType === type ? 'bg-white' : 'text-white'}`}
-                  style={courtType === type ? { color: BRAND } : {}}
-                  whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                <button key={type} onClick={() => setCourtType(type)}
+                  className="flex-1 py-[10px] text-[12px] rounded-[999px] uppercase font-ibm font-bold relative"
+                  style={{ color: courtType === type ? BRAND : 'rgba(255,255,255,0.85)', zIndex: 1, transition: 'color 0.2s ease' }}>
                   {type === 'outdoor' ? "All'aperto" : 'Al chiuso'}
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>
         </motion.div>
 
         {/* ── Day strip ── */}
+        <motion.div animate={{ opacity: courtVisible ? 1 : 0 }} transition={{ duration: 0.15 }}>
         <div className="overflow-x-auto no-scrollbar w-full">
           <motion.div
             className="flex gap-[8px] w-max"
@@ -597,6 +616,7 @@ const App = () => {
             })}
           </motion.div>
         </div>
+        </motion.div>{/* end court fade */}
 
       </div>{/* end blue section */}
 
@@ -682,7 +702,8 @@ const App = () => {
           </div>
 
           {/* content */}
-          <div className="px-6 flex flex-col gap-3" style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }}>
+          <motion.div animate={{ opacity: courtVisible ? 1 : 0 }} transition={{ duration: 0.15 }}
+            className="px-6 flex flex-col gap-3" style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }}>
 
             {/* Fascia analizzata */}
             <AnimatePresence mode="wait">
@@ -790,7 +811,7 @@ const App = () => {
               </AnimatePresence>
             </div>
 
-          </div>{/* end content */}
+          </motion.div>{/* end content */}
 
         </div>{/* end scroll area */}
 
