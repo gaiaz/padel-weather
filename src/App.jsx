@@ -600,80 +600,12 @@ const App = () => {
 
       </div>{/* end blue section */}
 
-      {/* ── White sheet — flex col: parte fissa in alto + slot scrollabili sotto ── */}
+      {/* ── White sheet — unico scroll area, si attiva solo se il contenuto eccede ── */}
       <div className="flex-1 bg-white rounded-t-[36px]"
-        style={{ overflow: 'clip', boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', maxHeight: `calc(100dvh - ${blueH}px)` }}>
+        style={{ overflow: 'clip', boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}>
 
-        {/* ── Parte fissa: header giorno + fascia + card clima ── */}
-        <div className="flex-shrink-0 px-6 pt-6 pb-0 flex flex-col gap-3">
-
-          {/* Day header */}
-          <AnimatePresence mode="wait">
-            <motion.div key={`header-${selectedDay}`} {...contentSwap}>
-              <div className="flex items-start justify-between">
-                <div className="flex flex-col gap-1">
-                  <h2 className="text-[36px] leading-[42px] tracking-[-1.8px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
-                  <div className="flex items-center gap-3">
-                    <p className="font-ibm text-[18px] leading-[19.25px] text-[#364458]" style={{ fontWeight: 500 }}>{day.date}</p>
-                    <AnimatePresence>
-                      {gcalConnected && selectedDayEventCount > 0 && (
-                        <motion.div className="flex items-center gap-[5px]"
-                          initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }}
-                          transition={{ duration: 0.2 }}>
-                          <CalendarDays size={11} style={{ color: '#90a1b9' }} />
-                          <span className="font-ibm text-[11px] text-[#90a1b9]" style={{ fontWeight: 600 }}>
-                            {selectedDayEventCount} {selectedDayEventCount === 1 ? 'impegno' : 'impegni'}
-                          </span>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-                <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px] text-white" style={{ fontWeight: 500, background: BRAND }}>
-                  {day.tempMax}°
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Fascia analizzata */}
-          <AnimatePresence mode="wait">
-            <motion.div key={`fascia-${selectedSlot}`} className="flex items-center gap-2" {...contentSwap}>
-              <span className="font-ibm text-[14px] text-[#364458]" style={{ fontWeight: 500 }}>Fascia analizzata:</span>
-              <span className="font-ibm text-[9px] text-white uppercase px-[10px] py-[2px] rounded-full" style={{ fontWeight: 600, background: BRAND }}>{slot.time}</span>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Field analysis card */}
-          <AnimatePresence mode="wait">
-            <motion.div key={`card-${selectedDay}-${selectedSlot}-${courtType}`}
-              className="p-5 rounded-[8px] flex flex-col gap-3"
-              style={{ background: info.bg, border: `1px solid ${info.border}` }} {...contentSwap}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <motion.div className="p-[6.7px] rounded-[3.4px]"
-                    style={{ background: info.iconBg, border: `0.842px solid ${info.iconBgBorder}` }}
-                    initial={{ scale: 0.5, rotate: -15, opacity: 0 }}
-                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                    transition={{ type: 'spring', stiffness: 380, damping: 18, delay: 0.1 }}>
-                    {info.icon}
-                  </motion.div>
-                  <span className="font-ibm text-[21px] leading-[22.5px] tracking-[-0.63px]" style={{ fontWeight: 600, color: info.color }}>{info.label}</span>
-                </div>
-                <div className="flex flex-col items-end w-[48px]">
-                  <span className="font-ibm text-[9px] uppercase text-[#b99090]" style={{ fontWeight: 700 }}>Vento</span>
-                  <span className="font-ibm text-[12px] leading-[16px] text-[#6c4545]" style={{ fontWeight: 700 }}>{day.wind} km/h</span>
-                </div>
-              </div>
-              <p className="font-ibm text-[14px] leading-[19.25px] text-[#583131]" style={{ fontWeight: 500 }}>{info.tip}</p>
-            </motion.div>
-          </AnimatePresence>
-
-        </div>{/* end parte fissa */}
-
-        {/* ── Parte scrollabile: slot list ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-6"
-          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        <div className="overflow-y-auto"
+          style={{ maxHeight: `calc(100dvh - ${blueH}px)`, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
           onScroll={e => {
             const top = e.currentTarget.scrollTop;
             if (top > 24) {
@@ -687,91 +619,159 @@ const App = () => {
             }
           }}>
 
-          <div className="border-t border-slate-100 pt-[13px] mt-3" style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }}>
-            <motion.button onClick={() => setIsAccordionOpen(o => !o)}
-              className="w-full flex justify-between items-center pb-3" whileTap={{ scale: 0.98 }}>
-              <span className="font-ibm text-[14px] text-[#364458]" style={{ fontWeight: 500 }}>Dettaglio orario</span>
-              <motion.div animate={{ rotate: isAccordionOpen ? 0 : 180 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }}>
-                <ChevronUp size={15} className="text-slate-400" />
-              </motion.div>
-            </motion.button>
-
-            <AnimatePresence initial={false}>
-              {isAccordionOpen && (
-                <motion.div key="slots"
-                  initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }} style={{ overflow: 'hidden' }}>
-                  <motion.div className="flex flex-col gap-2 pb-1"
-                    variants={{ show: { transition: { staggerChildren: 0.07 } } }} initial="hidden" animate="show">
-                    {day.slots.map((s, i) => {
-                      const isActive = selectedSlot === i;
-                      const verdict = getSlotVerdict(s, day, courtType);
-                      const slotEvents = gcalConnected ? (selectedDayEvents.filter(ev => ev.slot === s.time)) : [];
-                      return (
-                        <motion.button key={i} onClick={() => setSelectedSlot(i)}
-                          className="w-full flex flex-col text-left"
-                          variants={slotVariant} whileTap={{ scale: 0.98 }}
-                          style={isActive
-                            ? { background: 'rgba(37,37,255,0.03)', border: `1px solid ${BRAND}`, borderRadius: '8px', padding: '14px 16px', opacity: 1 }
-                            : { background: '#f8fafc', border: '2px solid transparent', borderRadius: '8px', padding: '14px 16px', opacity: 0.65 }}>
-
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex flex-col items-start min-w-[80px]">
-                              <span className="font-ibm text-[16px] text-[#364458]" style={{ fontWeight: isActive ? 700 : 500 }}>
-                                {s.time}
-                              </span>
-                              <span className="font-ibm text-[10px] text-[#90a1b9] leading-[14px]" style={{ fontWeight: 600 }}>
-                                {slotDetails[i].range}
-                              </span>
-                            </div>
-                            <motion.div
-                              className="flex items-center gap-1 px-[8px] py-[4px] rounded-[6px]"
-                              style={{ background: verdict.bg }}
-                              initial={{ scale: 0.85, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.05 }}>
-                              <span style={{ color: verdict.color }}>{verdict.icon}</span>
-                              <span className="font-ibm text-[11px] leading-none" style={{ fontWeight: 700, color: verdict.color }}>
-                                {verdict.label}
+          {/* sticky day header */}
+          <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-3">
+            <AnimatePresence mode="wait">
+              <motion.div key={`header-${selectedDay}-${isScrolled}`} {...contentSwap}>
+                {isScrolled ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-ibm text-[20px] tracking-[-0.5px] text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</span>
+                      <span className="font-ibm text-[14px] text-[#90a1b9]" style={{ fontWeight: 500 }}>{day.date}</span>
+                    </div>
+                    <div className="px-3 py-[6px] rounded-[8px] font-ibm text-[18px] text-white" style={{ fontWeight: 500, background: BRAND }}>
+                      {day.tempMax}°
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-1">
+                      <h2 className="text-[36px] leading-[42px] tracking-[-1.8px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
+                      <div className="flex items-center gap-3">
+                        <p className="font-ibm text-[18px] leading-[19.25px] text-[#364458]" style={{ fontWeight: 500 }}>{day.date}</p>
+                        <AnimatePresence>
+                          {gcalConnected && selectedDayEventCount > 0 && (
+                            <motion.div className="flex items-center gap-[5px]"
+                              initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }}
+                              transition={{ duration: 0.2 }}>
+                              <CalendarDays size={11} style={{ color: '#90a1b9' }} />
+                              <span className="font-ibm text-[11px] text-[#90a1b9]" style={{ fontWeight: 600 }}>
+                                {selectedDayEventCount} {selectedDayEventCount === 1 ? 'impegno' : 'impegni'}
                               </span>
                             </motion.div>
-                            <div className="flex flex-col items-end min-w-[36px] gap-[2px]">
-                              <span className="font-ibm text-[14px] leading-[18px]"
-                                    style={{ fontWeight: 700, color: s.temp > 30 ? '#fb2c36' : '#1d293d' }}>
-                                {s.temp}°
-                              </span>
-                              <div className="flex items-center gap-[3px]">
-                                {conditionIcon({ rainProb: s.rain, condition: s.condition }, 14)}
-                                <span className="font-ibm text-[11px] text-[#90a1b9]" style={{ fontWeight: 600 }}>{s.rain}%</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {slotEvents.length > 0 && (
-                            <div className="mt-[10px] flex flex-col gap-[5px] w-full">
-                              {slotEvents.map((ev, j) => (
-                                <div key={j} className="flex items-center gap-2">
-                                  <div className="flex-shrink-0 w-[3px] self-stretch rounded-full"
-                                    style={{ background: i === 0 ? '#fbbf24' : i === 1 ? BRAND : '#6366f1' }} />
-                                  <div className="flex flex-col flex-1 min-w-0">
-                                    <span className="font-ibm text-[12px] text-[#364458] truncate" style={{ fontWeight: 600 }}>{ev.title}</span>
-                                    <span className="font-ibm text-[10px] text-[#90a1b9]" style={{ fontWeight: 500 }}>
-                                      {ev.allDay ? 'Tutto il giorno' : `${formatTime(ev.startTime)} – ${formatTime(ev.endTime)}`}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
                           )}
-
-                        </motion.button>
-                      );
-                    })}
-                  </motion.div>
-                </motion.div>
-              )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                    <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px] text-white" style={{ fontWeight: 500, background: BRAND }}>
+                      {day.tempMax}°
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             </AnimatePresence>
           </div>
+
+          {/* content */}
+          <div className="px-6 flex flex-col gap-3" style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }}>
+
+            {/* Fascia analizzata */}
+            <AnimatePresence mode="wait">
+              <motion.div key={`fascia-${selectedSlot}`} className="flex items-center gap-2" {...contentSwap}>
+                <span className="font-ibm text-[14px] text-[#364458]" style={{ fontWeight: 500 }}>Fascia analizzata:</span>
+                <span className="font-ibm text-[9px] text-white uppercase px-[10px] py-[2px] rounded-full" style={{ fontWeight: 600, background: BRAND }}>{slot.time}</span>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Field analysis card */}
+            <AnimatePresence mode="wait">
+              <motion.div key={`card-${selectedDay}-${selectedSlot}-${courtType}`}
+                className="p-5 rounded-[8px] flex flex-col gap-3"
+                style={{ background: info.bg, border: `1px solid ${info.border}` }} {...contentSwap}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <motion.div className="p-[6.7px] rounded-[3.4px]"
+                      style={{ background: info.iconBg, border: `0.842px solid ${info.iconBgBorder}` }}
+                      initial={{ scale: 0.5, rotate: -15, opacity: 0 }}
+                      animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 18, delay: 0.1 }}>
+                      {info.icon}
+                    </motion.div>
+                    <span className="font-ibm text-[21px] leading-[22.5px] tracking-[-0.63px]" style={{ fontWeight: 600, color: info.color }}>{info.label}</span>
+                  </div>
+                  <div className="flex flex-col items-end w-[48px]">
+                    <span className="font-ibm text-[9px] uppercase text-[#b99090]" style={{ fontWeight: 700 }}>Vento</span>
+                    <span className="font-ibm text-[12px] leading-[16px] text-[#6c4545]" style={{ fontWeight: 700 }}>{day.wind} km/h</span>
+                  </div>
+                </div>
+                <p className="font-ibm text-[14px] leading-[19.25px] text-[#583131]" style={{ fontWeight: 500 }}>{info.tip}</p>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Slot detail */}
+            <div className="border-t border-slate-100 pt-[13px]">
+              <motion.button onClick={() => setIsAccordionOpen(o => !o)}
+                className="w-full flex justify-between items-center pb-3" whileTap={{ scale: 0.98 }}>
+                <span className="font-ibm text-[14px] text-[#364458]" style={{ fontWeight: 500 }}>Dettaglio orario</span>
+                <motion.div animate={{ rotate: isAccordionOpen ? 0 : 180 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }}>
+                  <ChevronUp size={15} className="text-slate-400" />
+                </motion.div>
+              </motion.button>
+
+              <AnimatePresence initial={false}>
+                {isAccordionOpen && (
+                  <motion.div key="slots"
+                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }} style={{ overflow: 'hidden' }}>
+                    <motion.div className="flex flex-col gap-2 pb-1"
+                      variants={{ show: { transition: { staggerChildren: 0.07 } } }} initial="hidden" animate="show">
+                      {day.slots.map((s, i) => {
+                        const isActive = selectedSlot === i;
+                        const verdict = getSlotVerdict(s, day, courtType);
+                        const slotEvents = gcalConnected ? (selectedDayEvents.filter(ev => ev.slot === s.time)) : [];
+                        return (
+                          <motion.button key={i} onClick={() => setSelectedSlot(i)}
+                            className="w-full flex flex-col text-left"
+                            variants={slotVariant} whileTap={{ scale: 0.98 }}
+                            style={isActive
+                              ? { background: 'rgba(37,37,255,0.03)', border: `1px solid ${BRAND}`, borderRadius: '8px', padding: '14px 16px', opacity: 1 }
+                              : { background: '#f8fafc', border: '2px solid transparent', borderRadius: '8px', padding: '14px 16px', opacity: 0.65 }}>
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex flex-col items-start min-w-[80px]">
+                                <span className="font-ibm text-[16px] text-[#364458]" style={{ fontWeight: isActive ? 700 : 500 }}>{s.time}</span>
+                                <span className="font-ibm text-[10px] text-[#90a1b9] leading-[14px]" style={{ fontWeight: 600 }}>{slotDetails[i].range}</span>
+                              </div>
+                              <motion.div className="flex items-center gap-1 px-[8px] py-[4px] rounded-[6px]"
+                                style={{ background: verdict.bg }}
+                                initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.05 }}>
+                                <span style={{ color: verdict.color }}>{verdict.icon}</span>
+                                <span className="font-ibm text-[11px] leading-none" style={{ fontWeight: 700, color: verdict.color }}>{verdict.label}</span>
+                              </motion.div>
+                              <div className="flex flex-col items-end min-w-[36px] gap-[2px]">
+                                <span className="font-ibm text-[14px] leading-[18px]" style={{ fontWeight: 700, color: s.temp > 30 ? '#fb2c36' : '#1d293d' }}>{s.temp}°</span>
+                                <div className="flex items-center gap-[3px]">
+                                  {conditionIcon({ rainProb: s.rain, condition: s.condition }, 14)}
+                                  <span className="font-ibm text-[11px] text-[#90a1b9]" style={{ fontWeight: 600 }}>{s.rain}%</span>
+                                </div>
+                              </div>
+                            </div>
+                            {slotEvents.length > 0 && (
+                              <div className="mt-[10px] flex flex-col gap-[5px] w-full">
+                                {slotEvents.map((ev, j) => (
+                                  <div key={j} className="flex items-center gap-2">
+                                    <div className="flex-shrink-0 w-[3px] self-stretch rounded-full"
+                                      style={{ background: i === 0 ? '#fbbf24' : i === 1 ? BRAND : '#6366f1' }} />
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                      <span className="font-ibm text-[12px] text-[#364458] truncate" style={{ fontWeight: 600 }}>{ev.title}</span>
+                                      <span className="font-ibm text-[10px] text-[#90a1b9]" style={{ fontWeight: 500 }}>
+                                        {ev.allDay ? 'Tutto il giorno' : `${formatTime(ev.startTime)} – ${formatTime(ev.endTime)}`}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+          </div>{/* end content */}
 
         </div>{/* end scroll area */}
 
