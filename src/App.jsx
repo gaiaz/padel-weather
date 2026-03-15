@@ -440,7 +440,7 @@ const App = () => {
       className="flex flex-col"
       style={{
         background: BRAND,
-        minHeight: '100%',
+        minHeight: '100dvh',
       }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
@@ -802,7 +802,7 @@ const App = () => {
         boxShadow: '0 -4px 16px rgba(0,0,0,0.06)',
         display: 'flex', gap: '8px',
         paddingTop: '10px', paddingLeft: '24px', paddingRight: '24px',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 34px)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
         <motion.button
           onClick={() => window.open(buildGCalLink(), '_blank')}
