@@ -590,8 +590,8 @@ const App = () => {
                   <AnimatePresence>
                     {!isScrolled && (
                       <motion.div key="icon"
-                        initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
-                        transition={{ duration: 0.15 }}>
+                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.15 }} style={{ overflow: 'hidden' }}>
                         {conditionIcon(item, 15)}
                       </motion.div>
                     )}
@@ -603,8 +603,8 @@ const App = () => {
                     {!isScrolled && gcalConnected && eventCount > 0 && (
                       <motion.div
                         className="flex items-center gap-[3px]"
-                        initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.15 }} style={{ overflow: 'hidden' }}>
                         {Array.from({ length: Math.min(eventCount, 3) }).map((_, j) => (
                           <div key={j} className="w-[3px] h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.45)' }} />
                         ))}
