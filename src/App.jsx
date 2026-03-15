@@ -297,18 +297,20 @@ const App = () => {
         scope: 'https://www.googleapis.com/auth/calendar.readonly',
         callback: (response) => {
           if (response.access_token) {
+            localStorage.setItem('gcal_token', response.access_token);
+            localStorage.setItem('gcal_expiry', String(Date.now() + 30 * 24 * 3600 * 1000));
             setGcalToken(response.access_token);
             setGcalConnected(true);
-            localStorage.setItem('gcal_connected', '1');
           }
         },
-        error_callback: () => {
-          localStorage.removeItem('gcal_connected');
-        },
+        error_callback: () => { /* silent re-auth fallita, utente riconnette manualmente */ },
       });
-      // Silent re-auth se l'utente era già connesso
-      if (localStorage.getItem('gcal_connected')) {
-        gcalClientRef.current.requestAccessToken({ prompt: '' });
+      // Ripristina sessione se entro 30 giorni
+      const savedToken = localStorage.getItem('gcal_token');
+      const savedExpiry = Number(localStorage.getItem('gcal_expiry') || 0);
+      if (savedToken && savedExpiry > Date.now()) {
+        setGcalToken(savedToken);
+        setGcalConnected(true);
       }
     };
     document.head.appendChild(script);
@@ -329,7 +331,8 @@ const App = () => {
     setGcalConnected(false);
     setGcalToken(null);
     setCalEvents({});
-    localStorage.removeItem('gcal_connected');
+    localStorage.removeItem('gcal_token');
+    localStorage.removeItem('gcal_expiry');
   };
 
   const timeToSlotName = (dateTimeStr) => {
@@ -357,11 +360,14 @@ const App = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (!res.ok) {
-        setGcalConnected(false);
+      if (res.status === 401) {
+        // Token scaduto (1h Google) — silent re-auth e riprova
+        localStorage.removeItem('gcal_token');
         setGcalToken(null);
+        if (gcalClientRef.current) gcalClientRef.current.requestAccessToken({ prompt: '' });
         return;
       }
+      if (!res.ok) { setGcalConnected(false); setGcalToken(null); return; }
 
       const data = await res.json();
       const grouped = {};
