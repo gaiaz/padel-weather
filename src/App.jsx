@@ -299,9 +299,17 @@ const App = () => {
           if (response.access_token) {
             setGcalToken(response.access_token);
             setGcalConnected(true);
+            localStorage.setItem('gcal_connected', '1');
           }
         },
+        error_callback: () => {
+          localStorage.removeItem('gcal_connected');
+        },
       });
+      // Silent re-auth se l'utente era già connesso
+      if (localStorage.getItem('gcal_connected')) {
+        gcalClientRef.current.requestAccessToken({ prompt: '' });
+      }
     };
     document.head.appendChild(script);
     return () => { if (document.head.contains(script)) document.head.removeChild(script); };
@@ -321,6 +329,7 @@ const App = () => {
     setGcalConnected(false);
     setGcalToken(null);
     setCalEvents({});
+    localStorage.removeItem('gcal_connected');
   };
 
   const timeToSlotName = (dateTimeStr) => {
