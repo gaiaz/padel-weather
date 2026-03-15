@@ -103,8 +103,6 @@ const App = () => {
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const compactLockedRef = useRef(false);
-  const containerRef = useRef(null);
-  const scrollAreaRef = useRef(null);
 
   /* ── Google Calendar state ── */
   const [gcalConnected, setGcalConnected] = useState(false);
@@ -439,17 +437,10 @@ const App = () => {
 
   return (
     <motion.div
-      ref={containerRef}
-      className="flex flex-col app-fullheight"
+      className="flex flex-col"
       style={{
         background: BRAND,
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 'auto',
-        height: 'var(--app-height)',
-        minHeight: 'var(--app-height)',
+        minHeight: '100%',
       }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
 
@@ -600,24 +591,28 @@ const App = () => {
 
       </div>{/* end blue section */}
 
-      {/* ── White scroll area — rounded-t sui bordi del container stesso ── */}
-      <div ref={scrollAreaRef} className="flex-1 min-h-0 overflow-y-auto bg-white rounded-t-[36px]"
-        style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)', overscrollBehavior: 'contain' }}
-        onScroll={e => {
-          const top = e.currentTarget.scrollTop;
-          if (top > 5) {
-            if (!compactLockedRef.current) {
-              setIsScrolled(true);
-              compactLockedRef.current = true;
-              setTimeout(() => { compactLockedRef.current = false; }, 400);
-            }
-          } else if (top < 2) {
-            setIsScrolled(false);
-          }
-        }}>
+      {/* ── White sheet — overflow:clip mantiene border-radius con scroll interno ── */}
+      <div className="flex-1 min-h-0 bg-white rounded-t-[36px]"
+        style={{ overflow: 'clip', boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}>
 
-      {/* inner wrapper — minHeight garantisce che il contenuto superi sempre il container, evitando il loop scroll */}
-      <div style={{ minHeight: '100vh' }}>
+        {/* ── Scroll area ── */}
+        <div className="h-full overflow-y-auto"
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+          onScroll={e => {
+            const top = e.currentTarget.scrollTop;
+            if (top > 24) {
+              if (!compactLockedRef.current) {
+                setIsScrolled(true);
+                compactLockedRef.current = true;
+                setTimeout(() => { compactLockedRef.current = false; }, 500);
+              }
+            } else if (top < 8) {
+              setIsScrolled(false);
+            }
+          }}>
+
+      {/* inner wrapper — minHeight + paddingBottom per non finire sotto la CTA fixed */}
+      <div style={{ minHeight: '100dvh', paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }}>
 
         {/* Sticky day header */}
         <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-3">
@@ -796,11 +791,19 @@ const App = () => {
 
       </div>{/* end inner wrapper */}
 
-      </div>{/* end white scroll area */}
+        </div>{/* end scroll area */}
 
-      {/* ── CTA — flex child, sempre visibile in fondo (il container .app-fullheight ha già padding-bottom safe area) ── */}
-      <div className="bg-white flex-shrink-0 px-6 pt-3 pb-8 flex gap-2"
-        style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.06)' }}>
+      </div>{/* end white sheet */}
+
+      {/* ── CTA — position fixed, bottom 0, safe area come padding-bottom ── */}
+      <div style={{
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 20,
+        background: 'white',
+        boxShadow: '0 -4px 16px rgba(0,0,0,0.06)',
+        display: 'flex', gap: '8px',
+        paddingTop: '10px', paddingLeft: '24px', paddingRight: '24px',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+      }}>
         <motion.button
           onClick={() => window.open(buildGCalLink(), '_blank')}
           className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
