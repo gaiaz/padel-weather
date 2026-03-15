@@ -802,7 +802,7 @@ const App = () => {
         boxShadow: '0 -4px 16px rgba(0,0,0,0.06)',
         display: 'flex', gap: '8px',
         paddingTop: '10px', paddingLeft: '24px', paddingRight: '24px',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 34px)',
       }}>
         <motion.button
           onClick={() => window.open(buildGCalLink(), '_blank')}
