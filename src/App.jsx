@@ -454,8 +454,8 @@ const App = () => {
     }
   };
 
-  /* ── Loading (solo al primo avvio, non sui refresh) ── */
-  if (loading && weatherData.length === 0) return (
+  /* ── Loading ── */
+  if (loading) return (
     <motion.div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: BRAND }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
 
@@ -487,8 +487,8 @@ const App = () => {
         {/* ── Header ── */}
         <motion.header
           className="flex justify-between items-start px-6"
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0, paddingTop: isScrolled ? 10 : 20, paddingBottom: isScrolled ? 6 : 8 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, paddingTop: isScrolled ? 10 : 20, paddingBottom: isScrolled ? 6 : 8 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
           <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
             <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white flex items-center gap-2" style={{ fontWeight: 700 }}>
