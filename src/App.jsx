@@ -724,11 +724,11 @@ const App = () => {
             if (top > 1) {
               if (!compactLockedRef.current) {
                 setIsScrolled(true);
-                compactLockedRef.current = true;
-                setTimeout(() => { compactLockedRef.current = false; }, 600);
               }
-            } else if (top < 2 && !compactLockedRef.current) {
+            } else if (top === 0) {
               setIsScrolled(false);
+              compactLockedRef.current = true;
+              setTimeout(() => { compactLockedRef.current = false; }, 400);
             }
           }}>
 
