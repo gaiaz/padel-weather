@@ -103,6 +103,7 @@ const App = () => {
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const compactLockedRef = useRef(false);
+  const touchStartYRef = useRef(0);
   const blueRef = useRef(null);
   const [blueH, setBlueH] = useState(200);
   useEffect(() => {
@@ -465,7 +466,6 @@ const App = () => {
           <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
             <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white flex items-center gap-2" style={{ fontWeight: 700 }}>
               Padel<span style={{ color: 'rgba(255,255,255,0.45)' }}>Weather</span>
-              <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" title="Versione aggiornata" aria-hidden />
             </h1>
             <motion.div
               className="flex items-center gap-2 mt-2 overflow-hidden"
@@ -564,7 +564,7 @@ const App = () => {
                   <motion.span
                     className="font-ibm text-white leading-none"
                     animate={{ fontSize: isScrolled ? 15 : 20 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                    transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
                     style={{ fontWeight: 600 }}>
                     {item.date.split(' ')[0]}
                   </motion.span>
@@ -605,38 +605,54 @@ const App = () => {
         style={{ overflow: 'clip', boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}>
 
         <div className="overflow-y-auto"
-          style={{ maxHeight: `calc(100dvh - ${blueH}px)`, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+          style={{ maxHeight: `calc(100dvh - ${blueH}px)`, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', transition: 'max-height 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' }}
+          onTouchStart={e => { touchStartYRef.current = e.touches[0].clientY; }}
+          onTouchEnd={e => {
+            const el = e.currentTarget;
+            const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
+            // swipe verso il basso (dito scende) mentre siamo in cima → expand
+            if (deltaY > 40 && el.scrollTop < 2 && !compactLockedRef.current) {
+              setIsScrolled(false);
+            }
+          }}
           onScroll={e => {
             const el = e.currentTarget;
             const top = el.scrollTop;
-            // ignora rubber-band iOS: agisci solo se c'è overflow reale
-            if (el.scrollHeight <= el.clientHeight + 10) return;
-            if (top > 24) {
+            if (top > 5) {
               if (!compactLockedRef.current) {
                 setIsScrolled(true);
                 compactLockedRef.current = true;
-                setTimeout(() => { compactLockedRef.current = false; }, 500);
+                setTimeout(() => { compactLockedRef.current = false; }, 600);
               }
-            } else if (top < 8) {
+            } else if (top < 2 && !compactLockedRef.current) {
               setIsScrolled(false);
             }
           }}>
 
-          {/* sticky day header */}
-          <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-3">
-            <AnimatePresence mode="wait">
-              <motion.div key={`header-${selectedDay}-${isScrolled}`} {...contentSwap}>
-                {isScrolled ? (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-ibm text-[20px] tracking-[-0.5px] text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</span>
-                      <span className="font-ibm text-[14px] text-[#90a1b9]" style={{ fontWeight: 500 }}>{day.date}</span>
-                    </div>
-                    <div className="px-3 py-[6px] rounded-[8px] font-ibm text-[18px] text-white" style={{ fontWeight: 500, background: BRAND }}>
-                      {day.tempMax}°
-                    </div>
-                  </div>
-                ) : (
+          {/* sticky day header — niente AnimatePresence, solo crossfade su isScrolled */}
+          <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-3" style={{ overflow: 'hidden' }}>
+            {/* versione compatta */}
+            <motion.div
+              animate={{ opacity: isScrolled ? 1 : 0, height: isScrolled ? 'auto' : 0, marginBottom: isScrolled ? 0 : 0 }}
+              transition={{ duration: 0.22, ease: 'easeInOut' }}
+              style={{ overflow: 'hidden' }}>
+              <div className="flex items-center justify-between pb-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-ibm text-[20px] tracking-[-0.5px] text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</span>
+                  <span className="font-ibm text-[14px] text-[#90a1b9]" style={{ fontWeight: 500 }}>{day.date}</span>
+                </div>
+                <div className="px-3 py-[6px] rounded-[8px] font-ibm text-[18px] text-white" style={{ fontWeight: 500, background: BRAND }}>
+                  {day.tempMax}°
+                </div>
+              </div>
+            </motion.div>
+            {/* versione espansa */}
+            <motion.div
+              animate={{ opacity: isScrolled ? 0 : 1, height: isScrolled ? 0 : 'auto' }}
+              transition={{ duration: 0.22, ease: 'easeInOut' }}
+              style={{ overflow: 'hidden' }}>
+              <AnimatePresence mode="wait">
+                <motion.div key={`dayheader-${selectedDay}`} {...contentSwap}>
                   <div className="flex items-start justify-between">
                     <div className="flex flex-col gap-1">
                       <h2 className="text-[36px] leading-[42px] tracking-[-1.8px] font-ibm text-[#222f44]" style={{ fontWeight: 600 }}>{fullDayName}</h2>
@@ -660,9 +676,9 @@ const App = () => {
                       {day.tempMax}°
                     </div>
                   </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
           </div>
 
           {/* content */}
@@ -670,7 +686,7 @@ const App = () => {
 
             {/* Fascia analizzata */}
             <AnimatePresence mode="wait">
-              <motion.div key={`fascia-${selectedSlot}`} className="flex items-center gap-2" {...contentSwap}>
+              <motion.div key={`fascia-${selectedDay}-${selectedSlot}`} className="flex items-center gap-2" {...contentSwap}>
                 <span className="font-ibm text-[14px] text-[#364458]" style={{ fontWeight: 500 }}>Fascia analizzata:</span>
                 <span className="font-ibm text-[9px] text-white uppercase px-[10px] py-[2px] rounded-full" style={{ fontWeight: 600, background: BRAND }}>{slot.time}</span>
               </motion.div>
@@ -678,7 +694,7 @@ const App = () => {
 
             {/* Field analysis card */}
             <AnimatePresence mode="wait">
-              <motion.div key={`card-${selectedDay}-${selectedSlot}-${courtType}`}
+              <motion.div key={`card-${selectedDay}-${selectedSlot}`}
                 className="p-5 rounded-[8px] flex flex-col gap-3"
                 style={{ background: info.bg, border: `1px solid ${info.border}` }} {...contentSwap}>
                 <div className="flex items-center justify-between">
