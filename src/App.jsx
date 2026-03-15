@@ -104,9 +104,12 @@ const App = () => {
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const isScrolledRef = useRef(false);
+  useEffect(() => { isScrolledRef.current = isScrolled; }, [isScrolled]);
   const [courtVisible, setCourtVisible] = useState(true);
   const compactLockedRef = useRef(false);
   const touchStartYRef = useRef(0);
+  const scrollDivRef = useRef(null);
   const blueRef = useRef(null);
   const rawDataRef = useRef([]);
   const [blueH, setBlueH] = useState(200);
@@ -301,6 +304,30 @@ const App = () => {
       document.body.style.right = '';
     }
   }, [isLocModalOpen]);
+
+  // Intercetta touchmove non-passivo: swipe su in cima → compact (senza scrollare il contenuto)
+  useEffect(() => {
+    const el = scrollDivRef.current;
+    if (!el) return;
+    let startY = 0;
+    const onStart = (e) => { startY = e.touches[0].clientY; };
+    const onMove = (e) => {
+      const deltaY = e.touches[0].clientY - startY;
+      if (el.scrollTop === 0 && deltaY < -12 && !isScrolledRef.current && !compactLockedRef.current) {
+        e.preventDefault();
+        setIsScrolled(true);
+        isScrolledRef.current = true;
+        compactLockedRef.current = true;
+        setTimeout(() => { compactLockedRef.current = false; }, 400);
+      }
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+    };
+  }, []);
 
   useEffect(() => {
     if (rawDataRef.current.length > 0) {
@@ -555,7 +582,7 @@ const App = () => {
           className="flex justify-between items-start px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, paddingTop: isScrolled ? 10 : 20, paddingBottom: isScrolled ? 6 : 8 }}
-          transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+          transition={{ type: 'spring', stiffness: 280, damping: 32 }}>
           <div className="cursor-pointer" onClick={() => { setTempLocation(location); setIsLocModalOpen(true); }}>
             <h1 className="font-ibm text-[23.8px] leading-[24px] tracking-[-0.48px] italic text-white flex items-center gap-2" style={{ fontWeight: 700 }}>
               Padel<span style={{ color: 'rgba(255,255,255,0.45)' }}>Weather</span>
@@ -563,7 +590,7 @@ const App = () => {
             <motion.div
               className="flex items-center gap-2 mt-2 overflow-hidden"
               animate={{ height: isScrolled ? 0 : 20, opacity: isScrolled ? 0 : 1, marginTop: isScrolled ? 0 : 8 }}
-              transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+              transition={{ type: 'spring', stiffness: 280, damping: 32 }}>
               <span className="flex items-center gap-1 text-[11px] uppercase font-ibm font-bold text-white/70">
                 <MapPin size={10} className="text-white/50" /> {location}
               </span>
@@ -606,7 +633,7 @@ const App = () => {
         <motion.div
           className="px-6 overflow-hidden"
           animate={{ height: isScrolled ? 0 : 'auto', opacity: isScrolled ? 0 : 1 }}
-          transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+          transition={{ type: 'spring', stiffness: 280, damping: 32 }}>
           <div className="py-3">
             <div className="flex p-1 rounded-[99px] relative" style={{ background: 'rgba(255,255,255,0.12)' }}>
               {/* pill scorrevole */}
@@ -656,11 +683,11 @@ const App = () => {
                     opacity:       { duration: 0.3, delay: 0.15 + i * 0.055 },
                     y:             { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
                     scale:         { type: 'spring', stiffness: 260, damping: 22, delay: 0.15 + i * 0.055 },
-                    width:         { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
-                    paddingTop:    { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
-                    paddingBottom: { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
-                    paddingLeft:   { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
-                    paddingRight:  { duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] },
+                    width:         { type: 'spring', stiffness: 280, damping: 32 },
+                    paddingTop:    { type: 'spring', stiffness: 280, damping: 32 },
+                    paddingBottom: { type: 'spring', stiffness: 280, damping: 32 },
+                    paddingLeft:   { type: 'spring', stiffness: 280, damping: 32 },
+                    paddingRight:  { type: 'spring', stiffness: 280, damping: 32 },
                   }}>
                   <span className="text-[9px] uppercase tracking-[0.9px] font-ibm font-bold text-white/50">{item.day}</span>
                   <motion.span
@@ -707,25 +734,11 @@ const App = () => {
       <div className="flex-1 bg-white rounded-t-[36px]"
         style={{ overflow: 'clip', boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}>
 
-        <div className="overflow-y-auto"
+        <div ref={scrollDivRef} className="overflow-y-auto"
           style={{ maxHeight: `calc(100dvh - ${blueH}px)`, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', transition: 'max-height 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' }}
-          onTouchStart={e => { touchStartYRef.current = e.touches[0].clientY; }}
-          onTouchEnd={e => {
-            const el = e.currentTarget;
-            const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
-            // swipe verso il basso (dito scende) mentre siamo in cima → expand
-            if (deltaY > 40 && el.scrollTop < 2 && !compactLockedRef.current) {
-              setIsScrolled(false);
-            }
-          }}
           onScroll={e => {
-            const el = e.currentTarget;
-            const top = el.scrollTop;
-            if (top > 1) {
-              if (!compactLockedRef.current) {
-                setIsScrolled(true);
-              }
-            } else if (top === 0) {
+            const top = e.currentTarget.scrollTop;
+            if (top === 0 && !compactLockedRef.current) {
               setIsScrolled(false);
               compactLockedRef.current = true;
               setTimeout(() => { compactLockedRef.current = false; }, 400);
