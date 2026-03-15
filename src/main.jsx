@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// iOS PWA / “Aggiungi a Home”: window.innerHeight è l’unica altezza affidabile; evita spazio vuoto sotto i CTA
 const setAppHeight = () => {
   const vv = window.visualViewport;
   const inner = window.innerHeight;
@@ -18,7 +17,7 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', setAppHeight);
   window.visualViewport.addEventListener('scroll', setAppHeight);
 }
-// Quando l’app da home viene riaperta (es. da multitasking)
+// Quando l'app da home viene riaperta (es. da multitasking)
 window.addEventListener('focus', setAppHeight);
 window.addEventListener('pageshow', (e) => e.persisted && setAppHeight());
 setAppHeight();

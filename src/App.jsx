@@ -103,6 +103,8 @@ const App = () => {
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const compactLockedRef = useRef(false);
+  const containerRef = useRef(null);
+  const scrollAreaRef = useRef(null);
 
   /* ── Google Calendar state ── */
   const [gcalConnected, setGcalConnected] = useState(false);
@@ -437,6 +439,7 @@ const App = () => {
 
   return (
     <motion.div
+      ref={containerRef}
       className="flex flex-col app-fullheight"
       style={{
         background: BRAND,
@@ -598,7 +601,7 @@ const App = () => {
       </div>{/* end blue section */}
 
       {/* ── White scroll area — rounded-t sui bordi del container stesso ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-white rounded-t-[36px]"
+      <div ref={scrollAreaRef} className="flex-1 min-h-0 overflow-y-auto bg-white rounded-t-[36px]"
         style={{ boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)', overscrollBehavior: 'contain' }}
         onScroll={e => {
           const top = e.currentTarget.scrollTop;
