@@ -110,6 +110,7 @@ const App = () => {
   const compactLockedRef = useRef(false);
   const touchStartYRef = useRef(0);
   const scrollDivRef = useRef(null);
+  const sheetRef = useRef(null);
   const blueRef = useRef(null);
   const rawDataRef = useRef([]);
   const [blueH, setBlueH] = useState(200);
@@ -305,29 +306,40 @@ const App = () => {
     }
   }, [isLocModalOpen]);
 
-  // Intercetta touchmove non-passivo: swipe su in cima → compact (senza scrollare il contenuto)
+  // Listener sull'outer sheet (riceve touch anche quando non c'è contenuto da scrollare)
   useEffect(() => {
-    const el = scrollDivRef.current;
-    if (!el) return;
+    const sheet = sheetRef.current;
+    const scrollEl = scrollDivRef.current;
+    if (!sheet || !scrollEl) return;
     let startY = 0;
     const onStart = (e) => { startY = e.touches[0].clientY; };
     const onMove = (e) => {
       const deltaY = e.touches[0].clientY - startY;
-      if (el.scrollTop === 0 && deltaY < -12 && !isScrolledRef.current && !compactLockedRef.current) {
+      const atTop = scrollEl.scrollTop < 2;
+      // Swipe su in cima → compact
+      if (atTop && deltaY < -10 && !isScrolledRef.current && !compactLockedRef.current) {
         e.preventDefault();
         setIsScrolled(true);
         isScrolledRef.current = true;
         compactLockedRef.current = true;
-        setTimeout(() => { compactLockedRef.current = false; }, 400);
+        setTimeout(() => { compactLockedRef.current = false; }, 350);
+      }
+      // Swipe giù in cima → expand
+      if (atTop && deltaY > 10 && isScrolledRef.current && !compactLockedRef.current) {
+        e.preventDefault();
+        setIsScrolled(false);
+        isScrolledRef.current = false;
+        compactLockedRef.current = true;
+        setTimeout(() => { compactLockedRef.current = false; }, 350);
       }
     };
-    el.addEventListener('touchstart', onStart, { passive: true });
-    el.addEventListener('touchmove', onMove, { passive: false });
+    sheet.addEventListener('touchstart', onStart, { passive: true });
+    sheet.addEventListener('touchmove', onMove, { passive: false });
     return () => {
-      el.removeEventListener('touchstart', onStart);
-      el.removeEventListener('touchmove', onMove);
+      sheet.removeEventListener('touchstart', onStart);
+      sheet.removeEventListener('touchmove', onMove);
     };
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     if (rawDataRef.current.length > 0) {
@@ -731,17 +743,16 @@ const App = () => {
       </div>{/* end blue section */}
 
       {/* ── White sheet — unico scroll area, si attiva solo se il contenuto eccede ── */}
-      <div className="flex-1 bg-white rounded-t-[36px]"
+      <div ref={sheetRef} className="flex-1 bg-white rounded-t-[36px]"
         style={{ overflow: 'clip', boxShadow: '0px -8px 40px 0px rgba(0,0,0,0.15)' }}>
 
         <div ref={scrollDivRef} className="overflow-y-auto"
           style={{ maxHeight: `calc(100dvh - ${blueH}px)`, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', transition: 'max-height 0.32s cubic-bezier(0.25,0.46,0.45,0.94)' }}
           onScroll={e => {
             const top = e.currentTarget.scrollTop;
-            if (top === 0 && !compactLockedRef.current) {
+            if (top < 2 && isScrolledRef.current) {
               setIsScrolled(false);
-              compactLockedRef.current = true;
-              setTimeout(() => { compactLockedRef.current = false; }, 400);
+              isScrolledRef.current = false;
             }
           }}>
 
