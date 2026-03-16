@@ -282,7 +282,7 @@ const App = () => {
   const conditionIcon = (item, size = 15) => {
     const rain = item.rainProb ?? 0;
     const c = (item.condition || '').toLowerCase();
-    if (rain > 25 || c.includes('rain') || c.includes('piogg'))
+    if (rain > 25 || (rain > 10 && (c.includes('rain') || c.includes('piogg'))))
       return <CloudRain className="text-blue-300" size={size} />;
     if (c.includes('wind') || c.includes('vent'))
       return <Wind className="text-teal-300" size={size} />;
