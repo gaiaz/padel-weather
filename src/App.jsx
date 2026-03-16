@@ -9,7 +9,7 @@ import {
   Snowflake, AlertTriangle, ThumbsUp, CalendarDays, Share
 } from 'lucide-react';
 
-const BRAND = '#0041af';
+const BRAND = '#2121B9';
 const GCAL_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const DAY_SHORT = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
@@ -257,7 +257,7 @@ const App = () => {
     rawDataRef.current = data;
     setWeatherData(data.map(d => ({ ...d, score: calculatePadelScore(d) })));
     setIsLive(liveStatus);
-    setLoading(false);
+    setTimeout(() => setLoading(false), 1800);
     setRefreshing(false);
   };
 
@@ -560,26 +560,35 @@ const App = () => {
   };
 
   /* ── Loading ── */
-  if (loading) return (
-    <motion.div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: BRAND }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
 
-      <Lottie animationData={loaderAnimation} loop style={{ width: 90, height: 90 }} />
-
-      <motion.p className="font-black text-white/50 uppercase tracking-widest text-[10px]"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-        Caricamento radar...
-      </motion.p>
-    </motion.div>
-  );
-
-  const fullDayName = day.full ?? day.day;
+  const fullDayName = day?.full ?? day?.day ?? '';
   const selectedDayEvents = day?.iso ? (calEvents[day.iso] || []) : [];
   const selectedDayEventCount = selectedDayEvents.length;
 
   return (
-    <motion.div
+    <>
+    <AnimatePresence>
+      {loading && (
+        <motion.div
+          key="splash"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+          style={{ background: BRAND }}
+          initial={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.18, transition: { duration: 0.45, ease: [0.4, 0, 0.2, 1] } }}
+        >
+          <motion.div
+            exit={{ scale: 1.25, transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
+          >
+            <Lottie animationData={loaderAnimation} loop style={{ width: 90, height: 90 }} />
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    {!loading && <motion.div
       className="flex flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35 }}
       style={{
         background: BRAND,
         minHeight: '100dvh',
@@ -935,7 +944,7 @@ const App = () => {
       }}>
         <motion.button
           onClick={() => window.open(buildGCalLink(), '_blank')}
-          className="flex-1 py-[17px] rounded-[8px] font-ibm text-[17px] text-white"
+          className="flex-1 py-[12px] rounded-[8px] font-ibm text-[17px] text-white"
           style={{ fontWeight: 500, background: BRAND }}
           whileHover={{ scale: 1.015, boxShadow: `0 8px 28px ${BRAND}55` }}
           whileTap={{ scale: 0.97 }}
@@ -944,7 +953,7 @@ const App = () => {
         </motion.button>
         <motion.button
           onClick={handleShare}
-          className="px-5 py-[17px] rounded-[8px] flex items-center justify-center"
+          className="px-5 py-[12px] rounded-[8px] flex items-center justify-center"
           style={{ background: '#f1f5f9' }}
           whileTap={{ scale: 0.93 }}
           transition={{ type: 'spring', stiffness: 380, damping: 20 }}>
@@ -1043,7 +1052,8 @@ const App = () => {
         )}
       </AnimatePresence>
 
-    </motion.div>
+    </motion.div>}
+    </>
   );
 };
 
