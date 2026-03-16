@@ -436,8 +436,11 @@ const App = () => {
       const params = `timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`;
 
       const grouped = {};
+      const seenIds = new Set();
       const addEvents = (items) => {
         (items || []).forEach(event => {
+          if (seenIds.has(event.id)) return;
+          seenIds.add(event.id);
           const dateStr = (event.start.dateTime || event.start.date || '').substring(0, 10);
           if (!dateStr) return;
           if (!grouped[dateStr]) grouped[dateStr] = [];
@@ -592,8 +595,7 @@ const App = () => {
       style={{
         background: BRAND,
         minHeight: '100dvh',
-      }}
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}>
+      }}>
 
       {/* ── Blue section (fuori dallo scroll — si compatta via animation) ── */}
       <div ref={blueRef} className="flex-shrink-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
