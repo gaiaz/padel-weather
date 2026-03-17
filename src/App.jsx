@@ -363,22 +363,25 @@ const App = () => {
         scope: 'https://www.googleapis.com/auth/calendar.readonly',
         callback: (response) => {
           if (response.access_token) {
-            localStorage.setItem('gcal_token', response.access_token);
-            localStorage.setItem('gcal_expiry', String(Date.now() + 30 * 24 * 3600 * 1000));
+            localStorage.setItem('gcal_was_connected', 'true');
             gcalTokenRef.current = response.access_token;
             setGcalToken(response.access_token);
             setGcalConnected(true);
             fetchCalendarList(response.access_token);
           }
         },
-        error_callback: () => { /* silent re-auth fallita, utente riconnette manualmente */ },
+        error_callback: () => {
+          // Silent re-auth fallita (sessione Google scaduta): disconnetti
+          setGcalConnected(false);
+          setGcalToken(null);
+          gcalTokenRef.current = null;
+          localStorage.removeItem('gcal_was_connected');
+          localStorage.removeItem('gcal_selected_cals');
+        },
       });
-      // Ripristina sessione se entro 30 giorni
-      const savedToken = localStorage.getItem('gcal_token');
-      const savedExpiry = Number(localStorage.getItem('gcal_expiry') || 0);
-      if (savedToken && savedExpiry > Date.now()) {
-        setGcalToken(savedToken);
-        setGcalConnected(true);
+      // Se l'utente si era già connesso, tenta re-auth silenziosa senza prompt
+      if (localStorage.getItem('gcal_was_connected')) {
+        gcalClientRef.current.requestAccessToken({ prompt: '' });
       }
     };
     document.head.appendChild(script);
@@ -407,8 +410,7 @@ const App = () => {
     setCalendarList([]);
     setSelectedCalIds(null);
     setIsCalSettingsOpen(false);
-    localStorage.removeItem('gcal_token');
-    localStorage.removeItem('gcal_expiry');
+    localStorage.removeItem('gcal_was_connected');
     localStorage.removeItem('gcal_selected_cals');
   };
 
@@ -462,8 +464,8 @@ const App = () => {
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (res.status === 401) {
-            localStorage.removeItem('gcal_token');
             setGcalToken(null);
+            setGcalConnected(false);
             if (gcalClientRef.current) gcalClientRef.current.requestAccessToken({ prompt: '' });
             return null;
           }
