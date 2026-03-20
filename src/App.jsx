@@ -91,7 +91,7 @@ const getSlotVerdict = (s, dayData, ct) => {
 
 const App = () => {
   const [selectedDay, setSelectedDay] = useState(0);
-  const [selectedSlot, setSelectedSlot] = useState(1);
+  const [selectedSlot, setSelectedSlot] = useState(2);
   const [courtType, setCourtType] = useState('outdoor');
   const [location, setLocation] = useState('Roma');
   const [tempLocation, setTempLocation] = useState('');
@@ -134,6 +134,7 @@ const App = () => {
   const [isCalSettingsOpen, setIsCalSettingsOpen] = useState(false);
   const gcalClientRef = useRef(null);
   const gcalTokenRef = useRef(null);
+  const gcalRefreshTimerRef = useRef(null);
 
   const slotDetails = [
     { range: '08:00 - 12:00' },
@@ -358,6 +359,17 @@ const App = () => {
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.onload = () => {
+      const scheduleTokenRefresh = (expiresIn) => {
+        if (gcalRefreshTimerRef.current) clearTimeout(gcalRefreshTimerRef.current);
+        // Refresh 5 minuti prima della scadenza (token dura ~1 ora)
+        const refreshIn = Math.max((expiresIn - 300) * 1000, 0);
+        gcalRefreshTimerRef.current = setTimeout(() => {
+          if (gcalClientRef.current && localStorage.getItem('gcal_was_connected')) {
+            gcalClientRef.current.requestAccessToken({ prompt: '' });
+          }
+        }, refreshIn);
+      };
+
       gcalClientRef.current = window.google.accounts.oauth2.initTokenClient({
         client_id: GCAL_CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/calendar.readonly',
@@ -368,15 +380,22 @@ const App = () => {
             setGcalToken(response.access_token);
             setGcalConnected(true);
             fetchCalendarList(response.access_token);
+            // Programma il refresh proattivo prima della scadenza
+            if (response.expires_in) scheduleTokenRefresh(response.expires_in);
           }
         },
-        error_callback: () => {
-          // Silent re-auth fallita (sessione Google scaduta): disconnetti
-          setGcalConnected(false);
-          setGcalToken(null);
-          gcalTokenRef.current = null;
-          localStorage.removeItem('gcal_was_connected');
-          localStorage.removeItem('gcal_selected_cals');
+        error_callback: (err) => {
+          // Solo errori permanenti disconnettono (accesso revocato, account non trovato)
+          const permanentErrors = ['access_denied', 'invalid_client', 'unauthorized_client'];
+          if (permanentErrors.includes(err?.type)) {
+            setGcalConnected(false);
+            setGcalToken(null);
+            gcalTokenRef.current = null;
+            if (gcalRefreshTimerRef.current) clearTimeout(gcalRefreshTimerRef.current);
+            localStorage.removeItem('gcal_was_connected');
+            // Non rimuovere gcal_selected_cals: è configurazione utente, non auth
+          }
+          // Per errori transitori (popup_closed, network) non disconnettere
         },
       });
       // Se l'utente si era già connesso, tenta re-auth silenziosa senza prompt
@@ -385,7 +404,10 @@ const App = () => {
       }
     };
     document.head.appendChild(script);
-    return () => { if (document.head.contains(script)) document.head.removeChild(script); };
+    return () => {
+      if (document.head.contains(script)) document.head.removeChild(script);
+      if (gcalRefreshTimerRef.current) clearTimeout(gcalRefreshTimerRef.current);
+    };
   }, []);
 
   /* ── Fetch calendar events when token or selection changes ── */
@@ -782,7 +804,7 @@ const App = () => {
                   <span className="font-ibm text-[14px] text-[#90a1b9]" style={{ fontWeight: 500 }}>{day.date}</span>
                 </div>
                 <div className="px-3 py-[6px] rounded-[8px] font-ibm text-[18px]" style={{ fontWeight: 500, background: '#f0f0ff', color: BRAND }}>
-                  {day.tempMax}°
+                  {slot.temp}°
                 </div>
               </div>
             </motion.div>
@@ -813,7 +835,7 @@ const App = () => {
                       </div>
                     </div>
                     <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px]" style={{ fontWeight: 500, background: '#f0f0ff', color: BRAND }}>
-                      {day.tempMax}°
+                      {slot.temp}°
                     </div>
                   </div>
                 </motion.div>
