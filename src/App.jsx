@@ -804,7 +804,7 @@ const App = () => {
                   <span className="font-ibm text-[14px] text-[#90a1b9]" style={{ fontWeight: 500 }}>{day.date}</span>
                 </div>
                 <div className="px-3 py-[6px] rounded-[8px] font-ibm text-[18px]" style={{ fontWeight: 500, background: '#f0f0ff', color: BRAND }}>
-                  {slot.temp}°
+                  {day.tempMax}°
                 </div>
               </div>
             </motion.div>
@@ -835,7 +835,7 @@ const App = () => {
                       </div>
                     </div>
                     <div className="mt-1 pl-4 pr-3 py-[10px] rounded-[8px] font-ibm text-[24px] leading-[32px]" style={{ fontWeight: 500, background: '#f0f0ff', color: BRAND }}>
-                      {slot.temp}°
+                      {day.tempMax}°
                     </div>
                   </div>
                 </motion.div>
