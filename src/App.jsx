@@ -91,7 +91,14 @@ const getSlotVerdict = (s, dayData, ct) => {
 
 const App = () => {
   const [selectedDay, setSelectedDay] = useState(0);
-  const [selectedSlot, setSelectedSlot] = useState(2);
+  const [defaultSlot, setDefaultSlot] = useState(() => {
+    const saved = localStorage.getItem('preferred_slot');
+    return saved !== null ? Number(saved) : 2;
+  });
+  const [selectedSlot, setSelectedSlot] = useState(() => {
+    const saved = localStorage.getItem('preferred_slot');
+    return saved !== null ? Number(saved) : 2;
+  });
   const [courtType, setCourtType] = useState('outdoor');
   const [location, setLocation] = useState('Roma');
   const [tempLocation, setTempLocation] = useState('');
@@ -691,7 +698,7 @@ const App = () => {
               const eventCount = gcalConnected ? (calEvents[item.iso]?.length || 0) : 0;
               return (
                 <motion.button key={i}
-                  onClick={() => { setSelectedDay(i); setSelectedSlot(1); setIsScrolled(false); compactLockedRef.current = false; }}
+                  onClick={() => { setSelectedDay(i); setSelectedSlot(defaultSlot); setIsScrolled(false); compactLockedRef.current = false; }}
                   className="flex-shrink-0 flex flex-col items-center gap-[5.8px] rounded-[6px]"
                   initial={{ opacity: 0, y: 20, scale: 0.92 }}
                   animate={{
@@ -880,7 +887,7 @@ const App = () => {
                         const verdict = getSlotVerdict(s, day, courtType);
                         const slotEvents = gcalConnected ? (selectedDayEvents.filter(ev => ev.slot === s.time)) : [];
                         return (
-                          <motion.button key={i} onClick={() => setSelectedSlot(i)}
+                          <motion.button key={i} onClick={() => { setSelectedSlot(i); setDefaultSlot(i); localStorage.setItem('preferred_slot', i); }}
                             className="w-full flex flex-col text-left"
                             variants={slotVariant} whileTap={{ scale: 0.98 }}
                             style={isActive
