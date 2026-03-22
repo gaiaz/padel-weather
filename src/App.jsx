@@ -424,7 +424,7 @@ const App = () => {
     if (!dateTimeStr) return null;
     const h = new Date(dateTimeStr).getHours();
     if (h >= 8  && h < 12) return 'Mattina';
-    if (h >= 13 && h < 18) return 'Pomeriggio';
+    if (h >= 12 && h < 18) return 'Pomeriggio';
     if (h >= 18 && h < 23) return 'Sera';
     return null;
   };
@@ -439,9 +439,11 @@ const App = () => {
     if (!ids.length) { setCalEvents({}); return; }
     try {
       const now = new Date();
+      const startOfToday = new Date(now);
+      startOfToday.setHours(0, 0, 0, 0);
       const end = new Date(now);
       end.setDate(end.getDate() + 14);
-      const params = `timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`;
+      const params = `timeMin=${startOfToday.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`;
 
       const grouped = {};
       const seenIds = new Set();
